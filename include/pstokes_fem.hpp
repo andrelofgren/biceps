@@ -153,16 +153,16 @@ public:
     /**
      * @brief Applies Dirichlet boundary conditions for a specific velocity component.
      * 
-     * @param[in] boundary_id The domain ID for the boundary on which the boundary condition is applied.
+     * @param[in] boundary_part The ID for the boundary part.
      * @param[in] velocity_component The velocity component to which the boundary condition is applied.
-     * @param[in] ub_func The function representing the Dirichlet boundary condition.
+     * @param[in] u_func The function representing the Dirichlet boundary condition.
      *
      * This function is scheduled for removal, but is kept around for compatibility with unit tests.
      */
     void apply_dirichlet_bc(
         const int boundary_part,
         const int velocity_component,
-        std::function<FloatType(FloatType, FloatType)> ub_func
+        std::function<FloatType(FloatType, FloatType)> u_func
     );
 
     /**

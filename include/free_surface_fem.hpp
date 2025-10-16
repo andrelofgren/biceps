@@ -90,6 +90,49 @@ public:
         FloatType dt
     );
 
+    void assemble_rhs_BDF2(
+    FEMFunction1D &h0_fem_func,
+    FEMFunction1D &ux_fem_func,
+    FEMFunction1D &uz_fem_func,
+    FEMFunction1D &ac_fem_func,
+    FEMFunction1D &h0_fem_funcOld,
+    FloatType dt
+    );
+
+    void assemble_rhs_Multistep(
+        FEMFunction1D &h0_fem_func,
+        FEMFunction1D &ux_fem_func,
+        FEMFunction1D &uz_fem_func,
+        FEMFunction1D &ac_fem_func,
+        FEMFunction1D &h0_fem_funcOld,
+        FEMFunction1D &ux_fem_funcOld,
+        FEMFunction1D &uz_fem_funcOld,
+        FEMFunction1D &ac_fem_funcOld,
+        FloatType weightk, 
+        FloatType weightkm1,
+        FloatType dt
+    );
+
+    void assemble_rhs_CN(
+        FEMFunction1D &h0_fem_func,
+        FEMFunction1D &ux_fem_func,
+        FEMFunction1D &uz_fem_func,
+        FEMFunction1D &ac_fem_func,
+        FEMFunction1D &ux_fem_funcOld,
+        FEMFunction1D &uz_fem_funcOld,
+        FEMFunction1D &ac_fem_funcOld,
+        FloatType dt
+    );
+
+
+    void assemble_rhs_crankish(
+        FEMFunction1D &h0_fem_func,
+        FEMFunction1D &ux_fem_func,
+        FEMFunction1D &uz_fem_func,
+        FEMFunction1D &ac_fem_func,
+        FloatType dt
+    );
+
     /**
      * @brief Assembles the left-hand side (LHS) matrix for the implicit scheme.
      * 
@@ -97,6 +140,17 @@ public:
      * @param[in] dt The time step for the simulation.
      */
     void assemble_lhs_simplicit(
+        FEMFunction1D &ux_fem_func,
+        FloatType dt
+    );
+
+     void assemble_lhs_BDF2(
+        FEMFunction1D &ux_fem_func,
+        FloatType dt
+    );
+
+
+    void assemble_lhs_crankish(
         FEMFunction1D &ux_fem_func,
         FloatType dt
     );
