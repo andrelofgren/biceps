@@ -29,41 +29,34 @@ IntervalMesh::IntervalMesh(double x0, double x1, int n_cells, int degree) :
     else if (degree > 2)
         throw std::invalid_argument("degree greater than 2 is currently not supported");
 
-    // Compute the number of degrees of freedom in the mesh
     _hl = _degree * n_cells;
 
-    // Initialize matrices for point locations, cell-to-DOF mapping, and degree-of-freedom IDs
     pmat = Eigen::MatrixXd::Zero(nof_dofs(), 2);
     cmat = Eigen::MatrixXi::Zero(nof_cells(), dofs_per_cell());
     dimat = Eigen::VectorXi::Zero(nof_dofs());
 
-    // Set up point matrix (pmat) and degree-of-freedom identification (dimat)
     for (int di = 0; di < nof_dofs(); di++) {
-        // Compute the position of each point in the mesh interval
         pmat(di, 0) = x0 + (x1 - x0) * di / (nof_dofs() - 1);
 
-        // Mark nodes based on the point positions
         if (fabs(pmat(di, 0) - x0) < 1e-10)
-            dimat(di) = MESH1D::WEST_ID;  // Left boundary
+            dimat(di) = MESH1D::WEST_ID;
         else if (fabs(pmat(di, 0) - x1) < 1e-10)
-            dimat(di) = MESH1D::EAST_ID;  // Right boundary
+            dimat(di) = MESH1D::EAST_ID;
         else
-            dimat(di) = MESH1D::INTERIOR_ID;  // Interior point
+            dimat(di) = MESH1D::INTERIOR_ID;
     }
 
-    // Initialize the cell-to-degree-of-freedom (cmat) mapping
     for (int ci = 0; ci < nof_cells(); ci++)
         for (int k = 0; k < dofs_per_cell(); k++)
             cmat(ci, k) = ci * degree + k;
 
-    // Compute and store the indices of vertex degrees of freedom
     compute_vertex_dof_inds();
 }
 
 void IntervalMesh::compute_vertex_dof_inds() {
-    vertex_dof_inds.reserve(nof_verts());  // Pre-allocate space for vertex DOF indices
-    for (int vi = 0; vi < _hl + 1; vi += _degree)  // Every `_degree`-th point is a vertex
-        vertex_dof_inds.push_back(vi);  // Store the vertex DOF index
+    vertex_dof_inds.reserve(nof_verts());
+    for (int vi = 0; vi < _hl + 1; vi += _degree)
+        vertex_dof_inds.push_back(vi);
 }
 
 IntervalMesh::IntervalMesh(const Eigen::MatrixXd &pmat, int degree)
@@ -71,25 +64,21 @@ IntervalMesh::IntervalMesh(const Eigen::MatrixXd &pmat, int degree)
 {
     _nof_cells = (pmat.rows() - 1) / degree;
 
-    // Initialize matrices for cell-to-DOF mapping and degree-of-freedom identification
     cmat = Eigen::MatrixXi::Zero(nof_cells(), dofs_per_cell());
     dimat = Eigen::VectorXi::Zero(nof_dofs());
 
-    // Extract the first and last point coordinates from the point matrix
     double x0 = pmat(0, 0);
     double x1 = pmat(Eigen::last, 0);
 
-    // Mark nodes based on the point positions
     for (int di = 0; di < nof_dofs(); di++) {
         if (fabs(pmat(di, 0) - x0) < 1e-10)
-            dimat(di) = MESH1D::WEST_ID;  // Left boundary
+            dimat(di) = MESH1D::WEST_ID;
         else if (fabs(pmat(di, 0) - x1) < 1e-10)
-            dimat(di) = MESH1D::EAST_ID;  // Right boundary
+            dimat(di) = MESH1D::EAST_ID;
         else
-            dimat(di) = MESH1D::INTERIOR_ID;  // Interior point
+            dimat(di) = MESH1D::INTERIOR_ID;
     }
 
-    // Initialize the cell-to-degree-of-freedom (cmat) mapping
     for (int ci = 0; ci < nof_cells(); ci++)
         for (int k = 0; k < dofs_per_cell(); k++)
             cmat(ci, k) = ci * degree + k;
@@ -97,18 +86,18 @@ IntervalMesh::IntervalMesh(const Eigen::MatrixXd &pmat, int degree)
 
 std::vector<int> IntervalMesh::extract_vertex_dof_inds(int id)
 {
-    std::vector<int> vinds;  // Vector to store filtered vertex DOF indices
+    std::vector<int> vinds;
     for (int vi : vertex_dof_inds)
-        if (dimat(vi) & id)  // Check if the DOF corresponds to the specified identifier
-            vinds.push_back(vi);  // Add it to the result
+        if (dimat(vi) & id)
+            vinds.push_back(vi);
     return vinds;
 }
 
 std::vector<int> IntervalMesh::extract_dof_inds(int id)
 {
-    std::vector<int> dinds;  // Vector to store filtered DOF indices
+    std::vector<int> dinds;
     for (int di = 0; di < dimat.rows(); di++)
-        if (dimat(di) & id)  // Check if the DOF corresponds to the specified identifier
+        if (dimat(di) & id)
             dinds.push_back(di);
     return dinds;
 }
