@@ -52,11 +52,3 @@ target_link_libraries(
     ${eigenpy_LIBRARIES}
 )
 install(TARGETS biceps DESTINATION lib)
-
-if (ENABLE_PYTHON)
-    install(CODE "execute_process(
-        COMMAND ${CMAKE_COMMAND} -E create_symlink
-        ${CMAKE_INSTALL_PREFIX}/lib/libbiceps.so
-        ${Python3_SITELIB}/biceps.so
-    )")
-endif()
