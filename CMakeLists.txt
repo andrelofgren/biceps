@@ -24,7 +24,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type")
 set(ENABLE_PYTHON ON CACHE BOOL "Enable Python support")
 set(BUILD_SHARED_LIBS ON CACHE BOOL "Enable shared libs")
-# set(ENABLE_DOCS ON CACHE BOOL "Build documentation")
+set(ENABLE_DOCS ON CACHE BOOL "Build documentation")
+set(DOXYGEN_HTML ON CACHE BOOL "Build html documentation")
+set(DOXYGEN_LATEX ON CACHE BOOL "Build tex documentation")
+set(ENABLE_TESTS ON CACHE BOOL "Enable unit testing")
 
 # Check for Eigen3 and Boost (mandatory)
 find_package(Eigen3 3.4 REQUIRED NO_MODULE)
@@ -32,18 +35,79 @@ find_package(Boost 1.74 REQUIRED)
 
 # Check for Python interface dependencies (optional)
 find_package(Python COMPONENTS Development NumPy QUIET)
-
+find_package(Boost 1.74 COMPONENTS python QUIET)
+find_package(eigenpy QUIET)
 if(
     BUILD_SHARED_LIBS AND
     ENABLE_PYTHON AND
     Python_FOUND AND
     Python_Development_FOUND AND
     Python_NumPy_FOUND AND
+    Boost_PYTHON_FOUND AND
+    eigenpy_FOUND
 )
     set(PYTHON_WRAPPER ${CMAKE_SOURCE_DIR}/src/pywrapper.cpp)
     message(STATUS "Building Python interface.")
+elseif(ENABLE_PYTHON AND NOT BUILD_SHARED_LIBS)
+    set(ENABLE_PYTHON OFF)
+    message(WARNING "BUILD_SHARED_LIBS is OFF, but ENABLE_PYTHON is ON; Python interface will not be built.")
+elseif(ENABLE_PYTHON AND NOT Python_FOUND)
+    set(ENABLE_PYTHON OFF)
+    message(WARNING "Python not found, but ENABLE_PYTHON is ON; Python interface will not be built.")
+elseif(ENABLE_PYTHON AND NOT Python_Development_FOUND)
+    set(ENABLE_PYTHON OFF)
+    message(WARNING "Python development files not found, but ENABLE_PYTHON is ON; Python interface will not be built.")
+elseif(ENABLE_PYTHON AND NOT Python_NumPy_FOUND)
+    set(ENABLE_PYTHON OFF)
+    message(WARNING "NumPy not found, but ENABLE_PYTHON is ON; disabling Python; Python interface will not be built.")
+elseif(ENABLE_PYTHON AND NOT Boost_PYTHON_FOUND)
+    set(ENABLE_PYTHON OFF)
+    message(WARNING "Boost Python module not found, but ENABLE_PYTHON is ON; Python interface will not be built.")
+elseif(ENABLE_PYTHON AND NOT eigenpy_FOUND)
+    set(ENABLE_PYTHON OFF)
+    message(WARNING "EigenPy not found, but ENABLE_PYTHON is ON; Python interface will not be built.")
 else()
     message(STATUS "Python interface will not be built.")
+endif()
+
+# Check for documentation dependencies (optional)
+find_package(Doxygen QUIET)
+if(ENABLE_DOCS AND DOXYGEN_FOUND)
+    message(STATUS "Doxygen found, enabling documentation target.")
+
+    set(DOXYGEN_OUTPUT_DIR ${CMAKE_BINARY_DIR}/docs)
+    set(DOXYGEN_CONFIG_FILE ${CMAKE_BINARY_DIR}/Doxyfile)
+
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in ${DOXYGEN_CONFIG_FILE} @ONLY)
+
+    add_custom_target(
+        docs
+        COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_CONFIG_FILE}
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+        COMMENT "Generate documentation using Doxygen"
+        VERBATIM
+    )
+
+    # Install documentation (HTML and LaTeX if enabled)
+    if(DOXYGEN_HTML)
+        install(
+            DIRECTORY ${DOXYGEN_OUTPUT_DIR}/html
+            DESTINATION share/doc/biceps
+            PATTERN ".*" EXCLUDE
+        )
+    endif()
+
+    if(DOXYGEN_LATEX)
+        install(
+            DIRECTORY ${DOXYGEN_OUTPUT_DIR}/latex
+            DESTINATION share/doc/biceps
+            PATTERN ".*" EXCLUDE
+        )
+    endif()
+elseif(ENABLE_DOCS AND NOT DOXYGEN_FOUND)
+    message(WARNING "Doxygen not found, but ENABLE_DOCS is ON. Documentation target disabled.")
+else()
+    message(STATUS "Documentation will not be built.")
 endif()
 
 # Check for unit testing dependency (optional)
