@@ -17,13 +17,13 @@ cmake .. -DCMAKE_BUILD_TYPE=Release
 
 ### Python
 
-Building the python interface requires [EigenPy](https://github.com/stack-of-tasks/eigenpy) and the python module of [boost](https://www.boost.org/). [EigenPy](https://github.com/stack-of-tasks/eigenpy) in turn depends on [NumPy](https://numpy.org/) and [SciPy](https://scipy.org/):
+Building the python interface requires [EigenPy](https://github.com/stack-of-tasks/eigenpy) and the [boost](https://www.boost.org/) python module. The library [EigenPy](https://github.com/stack-of-tasks/eigenpy) in turn depends on [NumPy](https://numpy.org/) and [SciPy](https://scipy.org/), to install run the following command:
 
 ```console
 sudo apt install python3-numpy python3-scipy libboost-python-dev
 ```
 
-After installing dependencies for [EigenPy](https://github.com/stack-of-tasks/eigenpy), grab the latest release from [here](https://github.com/stack-of-tasks/eigenpy/archive/refs/tags/v3.13.0.tar.gz) and extract it:
+After installing dependencies for [EigenPy](https://github.com/stack-of-tasks/eigenpy), grab the latest release of it from [here](https://github.com/stack-of-tasks/eigenpy/archive/refs/tags/v3.13.0.tar.gz) and extract it:
 
 ```console
 tar -xvzf eigenpy-3.13.0.tar.gz && cd eigenpy-3.13.0
