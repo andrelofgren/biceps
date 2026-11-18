@@ -32,7 +32,7 @@ tar -xvzf eigenpy-3.13.0.tar.gz && cd eigenpy-3.13.0
 Then configure and compile (on all available cores):
 
 ```console
-mkdir -p .build && cd .build && cmake .. -DCMAKE_BUILD_TYPE=release && make -j$(cat /proc/cpuinfo | grep "core id" | sort | uniq | wc -l)
+mkdir -p .build && cd .build && cmake .. -DCMAKE_BUILD_TYPE=release && make -j$(grep "core id" /proc/cpuinfo | sort | uniq | wc -l)
 ```
 
 Finally, to install run:
@@ -84,7 +84,7 @@ git clone https://github.com/andrelofgrenSU/biceps.git && cd biceps
 
 2. Configure and compile (on all available cores):
 ```console
-mkdir -p .build && cd .build && cmake .. -DCMAKE_BUILD_TYPE=release -DENABLE_PYTHON=ON -DENABLE_TESTS=ON -DENABLE_DOCS=ON && make -j$(cat /proc/cpuinfo | grep "core id" | sort | uniq | wc -l)
+mkdir -p .build && cd .build && cmake .. -DCMAKE_BUILD_TYPE=release -DENABLE_PYTHON=ON -DENABLE_TESTS=ON -DENABLE_DOCS=ON && make -j$(grep "core id" /proc/cpuinfo | sort | uniq | wc -l)
 ```
 
 3. Build documentation (optional):
@@ -118,7 +118,7 @@ mkdir -p .build && cd .build && cmake .. -DCMAKE_BUILD_TYPE=release -DBUILD_SHAR
 ```
 if successful, build it (using all available cores for fast compilation)
 ```console
-make -j$(cat /proc/cpuinfo | grep "core id" | sort | uniq | wc -l)
+make -j$(grep "core id" /proc/cpuinfo | sort | uniq | wc -l)
 ```
 and if compilation succeeded, finally install it
 ```console
