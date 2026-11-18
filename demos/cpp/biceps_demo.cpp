@@ -16,11 +16,12 @@
  * You should have received a copy of the GNU General Public License
  * along with Biceps. If not, see <https://www.gnu.org/licenses/>.
  */
+#include <boost/format.hpp>
+#include <matplot/matplot.h>
+
 #include <enums.hpp>
 #include <pstokes_fem.hpp>
 #include <free_surface_fem.hpp>
-#include <boost/format.hpp>
-#include <matplot/matplot.h>
 
 #define GRAVITY 9.8
 #define ICE_DENSITY 910
@@ -32,9 +33,8 @@ double L = x1 - x0;  // Length of the domain
 double H = 1.0;  // Mean height of the domain
 double z0 = 0.1;  // Amplitude of surface undulation
 
-double eta = 1e12 * PA_TO_MPA / SEC_PER_YEAR;
-double A = 0.5/eta;  // Ice softness parameter
-double n_i = 1.0;  // Glen exponent
+double A = 100.0;  // Ice softness parameter
+double n_i = 3.0;  // Glen exponent
 double eps_reg_2 = 1e-10;  // Regularization parameter
 int fssa_version = FSSA_NONE;  // No FSSA stabilization
 double fssa_param = 0;  // Stabilization parameter in FSSA 
@@ -42,7 +42,7 @@ double fssa_param = 0;  // Stabilization parameter in FSSA
 int nx = 50;  // Number of elements in x-direction
 int nz = 5;  // Number of elements in z-direction
 int nt = 100;  // Number of time steps
-double dt = 0.04;  // Time step size
+double dt = 35.0;  // Time step size
 int deg_u = 2;  // Polynomial degree for velocity field
 int deg_p = 1;  // Polynomial degree for pressure field
 int deg_h = 1;  // Polynomial degree for height field
@@ -58,7 +58,7 @@ double zb_expr(double x)
 
 double zs_expr(double x)
 {
-    return H + z0*cos(PI_CONST*x/L);
+    return H + z0*cos(M_PI*x/L);
 }
 
 double force_x(double x, double z)
@@ -88,14 +88,14 @@ int main(int argc, char *argv[])
     std::vector<int> sdofs_h = u_mesh_2d.extract_vertex_dof_inds(MESH2D::SURFACE_ID);
 
     // Extract surface coordinates
-    Eigen::MatrixXd spmat_u = u_mesh_2d.pmat(sdofs_u, Eigen::all);
-    Eigen::MatrixXd spmat_h = u_mesh_2d.pmat(sdofs_h, Eigen::all);
-    Eigen::VectorXd xs_vec = spmat_h(Eigen::all, 0);
-    Eigen::VectorXd zs_vec = spmat_h(Eigen::all, 1);
+    Eigen::MatrixXd spmat_u = u_mesh_2d.pmat(sdofs_u, Eigen::placeholders::all);
+    Eigen::MatrixXd spmat_h = u_mesh_2d.pmat(sdofs_h, Eigen::placeholders::all);
+    Eigen::VectorXd xs_vec = spmat_h(Eigen::placeholders::all, 0);
+    Eigen::VectorXd zs_vec = spmat_h(Eigen::placeholders::all, 1);
 
     // Project mesh to z=0
-    spmat_u(Eigen::all, 1).array() = 0.0;
-    spmat_h(Eigen::all, 1).array() = 0.0;
+    spmat_u(Eigen::placeholders::all, 1).array() = 0.0;
+    spmat_h(Eigen::placeholders::all, 1).array() = 0.0;
 
     // Create 1D meshes for velocity and height on the surface
     IntervalMesh u_mesh_1d = IntervalMesh(spmat_u, deg_u);
@@ -134,19 +134,8 @@ int main(int argc, char *argv[])
     matplot::plot(xs_vec, zs_vec)->line_width(2.0);
     matplot::hold(true);
     for (int k = 0; k < nt; k++) {
+        psp.solve_nonlinear_system();
 
-        // Assemble the system
-        psp.assemble_stress_block();
-        psp.assemble_incomp_block();
-        // Call commit to insert elements to system matrix
-        psp.commit_lhs_mat();
-        psp.assemble_rhs_vec();
-
-        // Apply bcs by modifying the system matrix
-        psp.apply_zero_dirichlet_bc();
-
-        // Solve for velocity and pressure
-        psp.solve_linear_system();
         // Clear lhs matrix and rhs vector.
         psp.reset_system();
 

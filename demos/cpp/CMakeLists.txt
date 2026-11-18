@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
 
-find_package(Eigen3 3.4 REQUIRED NO_MODULE)
+find_package(Eigen3 5.0 REQUIRED NO_MODULE)
 find_package(Boost 1.74 REQUIRED)
 find_package(Matplot++ REQUIRED)
 find_library(biceps biceps)

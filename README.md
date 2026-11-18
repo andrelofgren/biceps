@@ -139,11 +139,12 @@ $ bin/biceps_demo
 ```
 
 ```C++
+#include <boost/format.hpp>
+#include <matplot/matplot.h>
+
 #include <enums.hpp>
 #include <pstokes_fem.hpp>
 #include <free_surface_fem.hpp>
-#include <boost/format.hpp>
-#include <matplot/matplot.h>
 
 #define GRAVITY 9.8
 #define ICE_DENSITY 910
@@ -210,14 +211,14 @@ int main(int argc, char *argv[])
     std::vector<int> sdofs_h = u_mesh_2d.extract_vertex_dof_inds(MESH2D::SURFACE_ID);
 
     // Extract surface coordinates
-    Eigen::MatrixX<double> spmat_u = u_mesh_2d.pmat(sdofs_u, Eigen::all);
-    Eigen::MatrixX<double> spmat_h = u_mesh_2d.pmat(sdofs_h, Eigen::all);
-    Eigen::VectorX<double> xs_vec = spmat_h(Eigen::all, 0);
-    Eigen::VectorX<double> zs_vec = spmat_h(Eigen::all, 1);
+    Eigen::MatrixXd spmat_u = u_mesh_2d.pmat(sdofs_u, Eigen::placeholders::all);
+    Eigen::MatrixXd spmat_h = u_mesh_2d.pmat(sdofs_h, Eigen::placeholders::all);
+    Eigen::VectorXd xs_vec = spmat_h(Eigen::placeholders::all, 0);
+    Eigen::VectorXd zs_vec = spmat_h(Eigen::placeholders::all, 1);
 
     // Project mesh to z=0
-    spmat_u(Eigen::all, 1).array() = 0.0;
-    spmat_h(Eigen::all, 1).array() = 0.0;
+    spmat_u(Eigen::placeholders::all, 1).array() = 0.0;
+    spmat_h(Eigen::placeholders::all, 1).array() = 0.0;
 
     // Create 1D meshes for velocity and height on the surface
     IntervalMesh u_mesh_1d = IntervalMesh(spmat_u, deg_u);
@@ -242,24 +243,28 @@ int main(int argc, char *argv[])
     // For L2 norm calculation
     h0_func.assemble_mass_matrix();
 
-    // Initialize the pStokes and Free Surface Problem
-    pStokesProblem psp(u_mesh_2d, p_mesh_2d);
+    // Initialize the pStokes
+    pStokesProblem psp(A, n_i, eps_reg_2, force_x, force_z, u_mesh_2d, p_mesh_2d);
+
+    // Configure BC mask (impenetrability on sides and noslip on bedrock)
+    psp.ux_dirichlet_bc_mask = MESH2D::NORTH_WEST_ID | MESH2D::WEST_ID | MESH2D::BED_ID | MESH2D::EAST_ID | MESH2D::NORTH_EAST_ID;
+    psp.uz_dirichlet_bc_mask = MESH2D::BED_ID;
+
+    // Initialize the Free Surface Problem
     FreeSurfaceProblem fsp(h_mesh_1d, u_mesh_1d);
 
     // Plot initial surface profile
     matplot::plot(xs_vec, zs_vec)->line_width(2.0);
     matplot::hold(true);
     for (int k = 0; k < nt; k++) {
-        psp.solve_nonlinear_system_picard(
-            A, n_i, eps_reg_2, fssa_version, fssa_param, force_x, force_z,
-            ux_boundary_id, uz_boundary_id, max_iter, stol, gauss_precision
-        );
+        psp.solve_nonlinear_system();
+
         // Clear lhs matrix and rhs vector.
         psp.reset_system();
 
         // Extract velocity field solutions
-        Eigen::VectorX<double> ux_vec = psp.velocity_x().vals;
-        Eigen::VectorX<double> uz_vec = psp.velocity_z().vals;
+        Eigen::VectorXd ux_vec = psp.velocity_x().vals;
+        Eigen::VectorXd uz_vec = psp.velocity_z().vals;
         // Set free surface velocity
         ux_func.vals = ux_vec(sdofs_u);
         uz_func.vals = uz_vec(sdofs_u);
@@ -271,10 +276,10 @@ int main(int argc, char *argv[])
         std::cout << boost::format{"A = %.16f"} %u_mesh_2d.area() << std::endl;
 
         // Solve the free surface problem using explicit time stepping
-        fsp.assemble_lhs_explicit(gauss_precision);
+        fsp.assemble_lhs_explicit();
         fsp.commit_lhs();
         fsp.assemble_rhs_explicit(
-            h0_func, ux_func, uz_func, ac_func, dt, gauss_precision
+            h0_func, ux_func, uz_func, ac_func, dt
         );
         fsp.solve_linear_system();
         // Clear lhs matrix and rhs vector
@@ -458,7 +463,6 @@ plt.show()
 ```
 
 ## Julia
-
 This demo requires Julia packages [PyCall](https://github.com/JuliaPy/PyCall.jl) and [Plots](https://docs.juliaplots.org/stable/):
 
 ```julia
