@@ -84,7 +84,7 @@ git clone https://github.com/andrelofgrenSU/biceps.git && cd biceps
 
 2. Configure and compile (on all available cores):
 ```console
-mkdir -p .build && cd .build && cmake .. -DCMAKE_BUILD_TYPE=release -DENABLE_PYTHON=ON -DENABLE_TESTS=ON -DENABLE_DOCS=ON && make -j$(grep "core id" /proc/cpuinfo | sort | uniq | wc -l)
+mkdir -p .build && cd .build && cmake .. -DCMAKE_BUILD_TYPE=release -DENABLE_PYTHON=ON -DENABLE_TESTS=ON && make -j$(grep "core id" /proc/cpuinfo | sort | uniq | wc -l)
 ```
 
 3. Build documentation (optional):
