@@ -87,17 +87,17 @@ git clone https://github.com/andrelofgrenSU/biceps.git && cd biceps
 mkdir -p .build && cd .build && cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_PYTHON=ON -DENABLE_TESTS=ON && make -j$(grep "core id" /proc/cpuinfo | sort | uniq | wc -l)
 ```
 
-3. Build documentation (optional):
-```console
-make docs
-```
+<!-- 3. Build documentation (optional): -->
+<!-- ```console -->
+<!-- make docs -->
+<!-- ``` -->
 
-4. Run tests (optional):
+3. Run tests (optional):
 ```console
 make test
 ```
 
-5. Install:
+4. Install:
 ```console
 sudo make install
 ```
