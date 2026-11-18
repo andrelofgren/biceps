@@ -2,18 +2,17 @@
 Biceps is a prognostic two-dimensional full-Stokes ice-sheet solver. Furthermore, it comes bundled with its own FEM libraries implemented using the numerical linear algebra library [Eigen3](https://eigen.tuxfamily.org/index.php?title=Main_Page). It is mainly intended for investigating numerical stability of viscous free-surface flows.
 
 # Build instruction
-In the following instructions, commands requiring elevated privileges are prepended with a '#', and commands that can be run as regular user with a '$'.
 ## Linux (Ubuntu/Debian)
 
 ### C++
 This project has rather few dependencies; a minimal C++ installation requires only a working C++ compiler and tool chain (e.g., [gcc](https://gcc.gnu.org/)), [CMake](https://cmake.org/), [boost](https://www.boost.org/), and [Eigen3](https://eigen.tuxfamily.org/index.php?title=Main_Page):
 
 ```console
-# apt install gcc build-essential cmake libboost-dev libeigen3-dev
+sudo apt install gcc build-essential cmake libboost-dev libeigen3-dev
 ```
 
 ```console
-$ cmake .. -DCMAKE_BUILD_TYPE=Release
+cmake .. -DCMAKE_BUILD_TYPE=Release
 ```
 
 ### Python
@@ -21,31 +20,31 @@ $ cmake .. -DCMAKE_BUILD_TYPE=Release
 Building the python interface requires [EigenPy](https://github.com/stack-of-tasks/eigenpy) and the python module of [boost](https://www.boost.org/). [EigenPy](https://github.com/stack-of-tasks/eigenpy) in turn depends on [NumPy](https://numpy.org/) and [SciPy](https://scipy.org/):
 
 ```console
-# apt install python3-numpy python3-scipy libboost-python-dev
+sudo apt install python3-numpy python3-scipy libboost-python-dev
 ```
 
-After installing dependencies for [EigenPy](https://github.com/stack-of-tasks/eigenpy), grab the latest release from [here](https://github.com/stack-of-tasks/eigenpy/archive/refs/tags/v3.10.3.tar.gz) and extract it:
+After installing dependencies for [EigenPy](https://github.com/stack-of-tasks/eigenpy), grab the latest release from [here](https://github.com/stack-of-tasks/eigenpy/archive/refs/tags/v3.13.0.tar.gz) and extract it:
 
 ```console
-$ tar -xvzf v3.10.3.tar.gz && cd eigenpy-3.10.3
+tar -xvzf v3.13.0.tar.gz && cd eigenpy-3.10.3
 ```
 
 Then configure and compile (on all available cores):
 
 ```console
-$ mkdir -p .build && cd .build && cmake .. -DCMAKE_BUILD_TYPE=release && make -j$(cat /proc/cpuinfo | grep "core id" | sort | uniq | wc -l)
+mkdir -p .build && cd .build && cmake .. -DCMAKE_BUILD_TYPE=release && make -j$(cat /proc/cpuinfo | grep "core id" | sort | uniq | wc -l)
 ```
 
 Finally, to install run:
 
 ```console
-# make install
+sudo make install
 ```
 
 To build Biceps with Python enabled, configure CMake:
 
 ```console
-$ cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_PYTHON=ON
+cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_PYTHON=ON
 ```
 
 ### Documentation
@@ -53,24 +52,24 @@ $ cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_PYTHON=ON
 Generating documentation requires [Doxygen](https://www.doxygen.nl/) and [Graphviz](https://graphviz.org/):
 
 ```console
-# apt install doxygen graphviz
+sudo apt install doxygen graphviz
 ```
 
 To build Biceps documentation, configure CMake:
 ```console
-$ cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_DOCS=ON
+cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_DOCS=ON
 ```
 
 ### Unit testing
 Unit testing is performed using the boost unit test module, which can be installed by running:
 
 ```console
-# apt install libboost-test-dev
+sudo apt install libboost-test-dev
 ```
 
 To build Biceps with testing enabled, configure CMake:
 ```console
-$ cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=ON
+cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=ON
 ```
 
 
@@ -80,27 +79,27 @@ The steps for installing this repository is:
 
 1. Clone repository:
 ```console
-$ git clone https://github.com/andrelofgrenSU/biceps.git && cd biceps
+git clone https://github.com/andrelofgrenSU/biceps.git && cd biceps
 ```
 
 2. Configure and compile (on all available cores):
 ```console
-$ mkdir -p .build && cd .build && cmake .. -DCMAKE_BUILD_TYPE=release -DENABLE_PYTHON=ON -DENABLE_TESTS=ON -DENABLE_DOCS=ON && make -j$(cat /proc/cpuinfo | grep "core id" | sort | uniq | wc -l)
+mkdir -p .build && cd .build && cmake .. -DCMAKE_BUILD_TYPE=release -DENABLE_PYTHON=ON -DENABLE_TESTS=ON -DENABLE_DOCS=ON && make -j$(cat /proc/cpuinfo | grep "core id" | sort | uniq | wc -l)
 ```
 
 3. Build documentation (optional):
 ```console
-$ make docs
+make docs
 ```
 
 4. Run tests (optional):
 ```console
-$ make test
+make test
 ```
 
 5. Install:
 ```console
-# make install
+sudo make install
 ```
 
 # Demos
@@ -111,31 +110,31 @@ The two main modules in this project are the pStokesProblem and the FreeSurfaceP
 Running this demo requires [Matplot++](https://matplotlib.org), a C++ plotting library with an [API](https://en.wikipedia.org/wiki/API) similar to the popular Python library [Matplotlib](https://matplotlib.org/). A tarball for Matplot++ is available from [here](https://github.com/alandefreitas/matplotplusplus/archive/refs/tags/v1.2.2.tar.gz). To install it, first extract it
 
 ```console
-$ tar -xvzf v1.2.2.tar.gz && cd matplotplusplus-1.2.2
+tar -xvzf v1.2.2.tar.gz && cd matplotplusplus-1.2.2
 ```
 then configure
 ```console
-$ mkdir -p .build && cd .build && cmake .. -DCMAKE_BUILD_TYPE=release -DBUILD_SHARED_LIBS=ON -DMATPLOTPP_BUILD_EXAMPLES=OFF -DMATPLOTPP_BUILD_TESTS=OFF
+mkdir -p .build && cd .build && cmake .. -DCMAKE_BUILD_TYPE=release -DBUILD_SHARED_LIBS=ON -DMATPLOTPP_BUILD_EXAMPLES=OFF -DMATPLOTPP_BUILD_TESTS=OFF
 ```
 if successful, build it (using all available cores for fast compilation)
 ```console
-$ make -j$(cat /proc/cpuinfo | grep "core id" | sort | uniq | wc -l)
+make -j$(cat /proc/cpuinfo | grep "core id" | sort | uniq | wc -l)
 ```
 and if compilation succeeded, finally install it
 ```console
-# make install 
+sudo make install 
 ```
 Lastly, install the default [gnuplot](https://gnuplot.info) backend
 ```console
-# apt install gnuplot
+sudo apt install gnuplot
 ```
 To run the demo below first compile and install it:
 ```console
-$ mkdir -p .build && cd .build && cmake .. -DCMAKE_BUILD_TYPE=release && make && make install && cd ..
+mkdir -p .build && cd .build && cmake .. -DCMAKE_BUILD_TYPE=release && make && make install && cd ..
 ```
 And then run the executable:
 ```console
-$ bin/biceps_demo
+bin/biceps_demo
 ```
 
 ```C++
@@ -307,13 +306,13 @@ int main(int argc, char *argv[])
 This demo requires [Matplotlib](https://matplotlib.org):
 
 ```console
-# apt install python3-matplotlibi
+sudo apt install python3-matplotlib
 ```
 
 To run:
 
 ```console
-$ python biceps_demo.py
+python biceps_demo.py
 ```
 
 ```python
@@ -474,7 +473,7 @@ Pkg.add("Plots")
 To run:
 
 ```console
-$ julia biceps_demo.jl
+julia biceps_demo.jl
 ```
 
 ```julia
@@ -789,3 +788,6 @@ for all $\mathbf{v} \in \mathcal{V}$ and all $q \in \mathcal{Q}$.
 
 It is seen that two extra terms are included that adjusts velocities based on the movement of the surface, essentially making the pStokes equation aware of the evolving domain. The added term on the left-hand side accounts for the movement due to the ice flow, and the term on the right-hand side the movement due to accumulation or ablation. In addition an implicitness parameter $\theta \in \mathbb{R}_+$ has also been introduced, where setting $\theta = 0$ results in an explicit solver and $\theta = 1$ a (quasi) implicit solver. In the code the FSSA parameter in the FSSA assembly routine corresponds to $\theta \Delta t$.
 
+## References
+
+# Related publications
