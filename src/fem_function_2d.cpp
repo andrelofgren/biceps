@@ -67,19 +67,16 @@ void FEMFunction2D::assign(const FEMFunction2D &f)
 
 FEMFunction2D FEMFunction2D::diff_x_interp()
 {
-    // Matrices and vectors for quadrature points, shape functions, and derivatives
     Eigen::MatrixXd node_coords, qpoints_rs, qpoints_xz, phi_rs, dphi_rs, dphi_xz;
     Eigen::VectorXd detJ_rs;
     Eigen::VectorXi element;
-    FEMFunction2D u_diff(mesh); // Function to store the derivative values
+    FEMFunction2D u_diff(mesh);
 
-    // Retrieve reference element quadrature points
     qpoints_rs = FEM2D::reference_element_points_rs(mesh.cell_type(), mesh.degree());
     detJ_rs = Eigen::VectorXd::Zero(qpoints_rs.rows());
     qpoints_xz = Eigen::MatrixXd::Zero(qpoints_rs.rows(), 2);
     dphi_xz = Eigen::MatrixXd::Zero(2 * qpoints_rs.rows(), mesh.dofs_per_cell());
 
-    // Compute Lagrange basis functions and their derivatives at quadrature points
     FEM2D::lagrange_basis(
         mesh.degree(),
         mesh.cell_type(),
@@ -87,30 +84,25 @@ FEMFunction2D FEMFunction2D::diff_x_interp()
         phi_rs, dphi_rs
     );
 
-    // Initialize derivative values and a counter for duplicate degrees of freedom
     Eigen::VectorXd diff_vals = Eigen::VectorXd::Zero(mesh.nof_dofs());
     Eigen::VectorXi duplicate_dof_count = Eigen::VectorXi::Zero(mesh.nof_dofs());
 
-    // Loop over each cell in the mesh
     for (int ci = 0; ci < mesh.cmat.rows(); ci++) {
-        element = mesh.cmat.row(ci); // Extract element connectivity
-        node_coords = mesh.pmat(element, Eigen::all); // Get node coordinates
+        element = mesh.cmat.row(ci);
+        node_coords = mesh.pmat(element, Eigen::all);
 
-        // Map quadrature points to the reference cell and compute shape functions
-        FEM2D::map_to_reference_cell(
+        FEM2D::map_from_reference_cell(
             mesh.degree(), mesh.cell_type(), node_coords, qpoints_rs,
             phi_rs, dphi_rs, detJ_rs, qpoints_xz, dphi_xz
         );
 
-        // Compute the derivative values at each quadrature point
         for (int q = 0; q < qpoints_rs.rows(); q++) {
-            int w = 2 * q; // Indexing for the x-derivative
+            int w = 2*q;
             duplicate_dof_count(element(q)) += 1;
             diff_vals(element(q)) += vals(element).dot(dphi_xz(w, Eigen::all));
         }
     }
 
-    // Normalize the computed derivative values by the duplicate dof count
     for (int dof = 0; dof < mesh.nof_dofs(); dof++) {
         u_diff.vals(dof) = diff_vals(dof) / duplicate_dof_count(dof);
     }
@@ -120,19 +112,16 @@ FEMFunction2D FEMFunction2D::diff_x_interp()
 
 FEMFunction2D FEMFunction2D::diff_z_interp()
 {
-    // Matrices and vectors for quadrature points, shape functions, and derivatives
     Eigen::MatrixXd node_coords, qpoints_rs, qpoints_xz, phi_rs, dphi_rs, dphi_xz;
     Eigen::VectorXd detJ_rs;
     Eigen::VectorXi element;
-    FEMFunction2D u_diff(mesh); // Function to store the derivative values
+    FEMFunction2D u_diff(mesh);
 
-    // Retrieve reference element quadrature points
     qpoints_rs = FEM2D::reference_element_points_rs(mesh.cell_type(), mesh.degree());
     detJ_rs = Eigen::VectorXd::Zero(qpoints_rs.rows());
     qpoints_xz = Eigen::MatrixXd::Zero(qpoints_rs.rows(), 2);
     dphi_xz = Eigen::MatrixXd::Zero(2 * qpoints_rs.rows(), mesh.dofs_per_cell());
 
-    // Compute Lagrange basis functions and their derivatives at quadrature points
     FEM2D::lagrange_basis(
         mesh.degree(),
         mesh.cell_type(),
@@ -140,30 +129,25 @@ FEMFunction2D FEMFunction2D::diff_z_interp()
         phi_rs, dphi_rs
     );
 
-    // Initialize derivative values and a counter for duplicate degrees of freedom
     Eigen::VectorXd diff_vals = Eigen::VectorXd::Zero(mesh.nof_dofs());
     Eigen::VectorXi duplicate_dof_count = Eigen::VectorXi::Zero(mesh.nof_dofs());
 
-    // Loop over each cell in the mesh
     for (int ci = 0; ci < mesh.cmat.rows(); ci++) {
-        element = mesh.cmat.row(ci); // Extract element connectivity
-        node_coords = mesh.pmat(element, Eigen::all); // Get node coordinates
+        element = mesh.cmat.row(ci);
+        node_coords = mesh.pmat(element, Eigen::all);
 
-        // Map quadrature points to the reference cell and compute shape functions
-        FEM2D::map_to_reference_cell(
+        FEM2D::map_from_reference_cell(
             mesh.degree(), mesh.cell_type(), node_coords, qpoints_rs,
             phi_rs, dphi_rs, detJ_rs, qpoints_xz, dphi_xz
         );
 
-        // Compute the derivative values at each quadrature point
         for (int q = 0; q < qpoints_rs.rows(); q++) {
-            int w = 2 * q + 1; // Indexing for the z-derivative
+            int w = 2*q + 1;
             duplicate_dof_count(element(q)) += 1;
             diff_vals(element(q)) += vals(element).dot(dphi_xz(w, Eigen::all));
         }
     }
 
-    // Normalize the computed derivative values by the duplicate dof count
     for (int dof = 0; dof < mesh.nof_dofs(); dof++) {
         u_diff.vals(dof) = diff_vals(dof) / duplicate_dof_count(dof);
     }
@@ -173,18 +157,15 @@ FEMFunction2D FEMFunction2D::diff_z_interp()
 
 FEMFunction2D FEMFunction2D::diff_x_proj()
 {
-    FEMFunction2D u_diff(mesh); // Function to store the projected derivative values
+    FEMFunction2D u_diff(mesh);
 
-    int deg = mesh.degree(); // Polynomial degree of the finite element space
+    int deg = mesh.degree();
 
-    // Assemble the mass matrix and stiffness matrix in the x-direction
     Eigen::SparseMatrix<double> M = FEM2D::assemble_mass_matrix(mesh, 2*deg + 1);
     Eigen::SparseMatrix<double> Ax = FEM2D::assemble_stiffness_x_matrix(mesh, 2*deg + 1);
 
-    // Compute the right-hand side vector for the system
     Eigen::VectorXd rhs_vec = Ax * vals;
 
-    // Solve the linear system M * u_diff = rhs_vec using a sparse LU decomposition
     Eigen::SparseLU<Eigen::SparseMatrix<double>> sp_solver;
     sp_solver.analyzePattern(M);
     sp_solver.factorize(M);
@@ -195,18 +176,15 @@ FEMFunction2D FEMFunction2D::diff_x_proj()
 
 FEMFunction2D FEMFunction2D::diff_z_proj()
 {
-    FEMFunction2D u_diff(mesh); // Function to store the projected derivative values
+    FEMFunction2D u_diff(mesh);
 
-    int deg = mesh.degree(); // Polynomial degree of the finite element space
+    int deg = mesh.degree();
 
-    // Assemble the mass matrix and stiffness matrix in the z-direction
     Eigen::SparseMatrix<double> M = FEM2D::assemble_mass_matrix(mesh, 2*deg + 1);
     Eigen::SparseMatrix<double> Az = FEM2D::assemble_stiffness_z_matrix(mesh, 2*deg + 1);
 
-    // Compute the right-hand side vector for the system
     Eigen::VectorXd rhs_vec = Az * vals;
 
-    // Solve the linear system M * u_diff = rhs_vec using a sparse LU decomposition
     Eigen::SparseLU<Eigen::SparseMatrix<double>> sp_solver;
     sp_solver.analyzePattern(M);
     sp_solver.factorize(M);

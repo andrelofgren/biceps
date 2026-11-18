@@ -3,13 +3,8 @@
 + General enhancements:
     * Simplify the CMakeLists.txt
     * Update the README
-    * Rewrite code documentation*
-        1. Remove all comments
-        2. Write new comments
-        3. Replace doxygen with sphinx
+    * Write documentation
     * Create deb/rpm packages
-
-*Much of the code documentation is currently AI slop and some comments quite misleading, and therefore I aim to replace it with my own human slop at some point.
 
 + Missing features:
     * Add support for normal-tangential coordinates

@@ -60,14 +60,12 @@ StructuredMesh::StructuredMesh(int nx, int nz, int degree, int cell_type):
     _nof_verts = (_nx+1)*(_nz+1);
     _nof_dofs = (_hl+1)*(_vl+1);
 
-    // Initialize matrices and vectors
     pmat = Eigen::MatrixXd(_nof_dofs, 2);
     pmat_unit_box = Eigen::MatrixXd(_nof_dofs, 2);
     cmat = Eigen::MatrixXi(_nof_cells, _dofs_per_cell);
     dimat = Eigen::VectorXi(_nof_dofs);
     cimat = Eigen::VectorXi(_nof_cells);
 
-    // Assemble various matrices and compute necessary data structures
     assemble_pmat();
     assemble_cmat();
     assemble_emat();
@@ -77,7 +75,6 @@ StructuredMesh::StructuredMesh(int nx, int nz, int degree, int cell_type):
     compute_vertex_dof_inds();
     compute_normals_and_tangents();
 
-    // Initialize mappings
     v2s_map = Eigen::VectorXi::Zero(_nof_dofs);
     v2b_map = Eigen::VectorXi::Zero(_nof_dofs);
     for (int vi = 0; vi < _nof_dofs; vi++) {
@@ -88,19 +85,16 @@ StructuredMesh::StructuredMesh(int nx, int nz, int degree, int cell_type):
 
 void StructuredMesh::assemble_pmat()
 {
-    // Generate linearly spaced values for the x and z ranges
     Eigen::VectorXd xrange = Eigen::VectorXd::LinSpaced(_hl + 1, 0.0, 1.0);
     Eigen::VectorXd zrange = Eigen::VectorXd::LinSpaced(_vl + 1, 0.0, 1.0);
 
     int dof = 0;
-    // Iterate over each combination of z and x coordinates
     for (double z : zrange) {
         for (double x : xrange) {
-            // Assign the calculated coordinates to the global position matrix
-            pmat(dof, 0) = x;   // x-coordinate
-            pmat(dof, 1) = z;   // z-coordinate
-            pmat_unit_box(dof, 0) = x;  // x-coordinate in unit box
-            pmat_unit_box(dof, 1) = z;  // z-coordinate in unit box
+            pmat(dof, 0) = x;
+            pmat(dof, 1) = z;
+            pmat_unit_box(dof, 0) = x;
+            pmat_unit_box(dof, 1) = z;
             dof++;
         }
     }
@@ -108,7 +102,7 @@ void StructuredMesh::assemble_pmat()
 
 void StructuredMesh::assemble_cmat()
 {
-    int ci = 0;  // Initialize cell index
+    int ci = 0;  // Cell index
     for (int i = 0; i < _vl; i += _degree) {
         for (int j = 0; j < _hl; j += _degree) {
             if (_cell_type == MESH2D::TRIANGLE_RIGHT) {
@@ -127,36 +121,32 @@ void StructuredMesh::assemble_cmat()
 
 void StructuredMesh::assemble_emat()
 {
-    // Initialize edge matrix with size based on number of edges and DOFs per edge
     emat = Eigen::MatrixXi(_nof_edges, _dofs_per_edge);
 
-    // Set to track visited edges to ensure each edge is added once
     std::set<std::tuple<int, int>> visited_edges;
-    std::tuple<int, int> edge;  // Edge represented as a tuple of (start, end)
+    std::tuple<int, int> edge;
 
-    int first_ind, last_ind, ei = 0;  // Edge indices and edge counter
-    for (int ci = 0; ci < cmat.rows(); ++ci) {  // Loop over all cells
-        Eigen::VectorXi cell = cmat.row(ci);  // Get the current cell's DOFs
-        for (int i = 0; i < _edges_per_cell; ++i) {  // Loop over edges per cell
+    int first_ind, last_ind, ei = 0;
+    for (int ci = 0; ci < cmat.rows(); ++ci) {
+        Eigen::VectorXi cell = cmat.row(ci);
+        for (int i = 0; i < _edges_per_cell; ++i) {
             first_ind = i * _degree;
-            if (i != _edges_per_cell - 1)  // If not the last edge in the cell
+            if (i != _edges_per_cell - 1)
                 last_ind = (i + 1) * _degree;
             else
-                last_ind = 0;  // For the last edge, wrap around to the first DOF
+                last_ind = 0;
 
-            // Create an edge by ordering the DOFs in increasing order
             if (cell(first_ind) < cell(last_ind))
                 edge = std::tuple<int, int>(cell(first_ind), cell(last_ind));
             else
                 edge = std::tuple<int, int>(cell(last_ind), cell(first_ind));
 
-            // If the edge hasn't been visited before, add it to emat
             if (visited_edges.find(edge) == visited_edges.end()) {
                 visited_edges.insert(edge);
                 for (int j = 0; j < _dofs_per_edge - 1; ++j) {
-                    emat(ei, j) = cell(first_ind + j);  // Assign DOFs for the edge
+                    emat(ei, j) = cell(first_ind + j);
                 }
-                emat(ei, _dofs_per_edge - 1) = cell(last_ind);  // Assign the last DOF
+                emat(ei, _dofs_per_edge - 1) = cell(last_ind);
                 ei++;
             }
         }
@@ -166,7 +156,6 @@ void StructuredMesh::assemble_emat()
 inline void StructuredMesh::triangle_right_connectivity(int ci, int i, int j)
 {
     if (_degree == 1) {
-        // Linear case: Right triangle connectivity (degree 1)
         cmat(ci, 0) = (_hl + 1) * i + j;
         cmat(ci, 1) = (_hl + 1) * i + j + 1;
         cmat(ci, 2) = (_hl + 1) * (i + 1) + j;
@@ -175,7 +164,6 @@ inline void StructuredMesh::triangle_right_connectivity(int ci, int i, int j)
         cmat(ci + 1, 1) = (_hl + 1) * (i + 1) + j;
         cmat(ci + 1, 2) = (_hl + 1) * i + (j + 1);
     } else if (_degree == 2) {
-        // Quadratic case: Right triangle connectivity (degree 2)
         cmat(ci, 0) = (_hl + 1) * i + j;
         cmat(ci, 1) = (_hl + 1) * i + j + 1;
         cmat(ci, 2) = (_hl + 1) * i + j + 2;
@@ -195,7 +183,6 @@ inline void StructuredMesh::triangle_right_connectivity(int ci, int i, int j)
 inline void StructuredMesh::triangle_left_connectivity(int ci, int i, int j)
 {
     if (_degree == 1) {
-        // Linear case: Left triangle connectivity (degree 1)
         cmat(ci, 0) = (_hl + 1) * (i + 1) + j;
         cmat(ci, 1) = (_hl + 1) * i + j;
         cmat(ci, 2) = (_hl + 1) * (i + 1) + j + 1;
@@ -204,7 +191,6 @@ inline void StructuredMesh::triangle_left_connectivity(int ci, int i, int j)
         cmat(ci + 1, 1) = (_hl + 1) * (i + 1) + j + 1;
         cmat(ci + 1, 2) = (_hl + 1) * i + j;
     } else if (_degree == 2) {
-        // Quadratic case: Left triangle connectivity (degree 2)
         cmat(ci, 0) = (_hl + 1) * (i + 2) + j;
         cmat(ci, 1) = (_hl + 1) * (i + 1) + j;
         cmat(ci, 2) = (_hl + 1) * i + j;
@@ -224,13 +210,11 @@ inline void StructuredMesh::triangle_left_connectivity(int ci, int i, int j)
 inline void StructuredMesh::quadrilateral_connectivity(int ci, int i, int j)
 {
     if (_degree == 1) {
-        // Linear case: Quadrilateral connectivity (degree 1)
         cmat(ci, 0) = (_hl + 1) * i + j;
         cmat(ci, 1) = (_hl + 1) * i + j + 1;
         cmat(ci, 2) = (_hl + 1) * (i + 1) + j + 1;
         cmat(ci, 3) = (_hl + 1) * (i + 1) + j;
     } else if (_degree == 2) {
-        // Quadratic case: Quadrilateral connectivity (degree 2)
         cmat(ci, 0) = (_hl + 1) * i + j;
         cmat(ci, 1) = (_hl + 1) * i + j + 1;
         cmat(ci, 2) = (_hl + 1) * i + j + 2;
@@ -267,41 +251,35 @@ void StructuredMesh::assemble_cimat_quadrilateral()
 {
     int i, j, ci;
 
-    // Mark corner cells with predefined IDs
     cimat(0) = MESH2D::SOUTH_WEST_ID;
     cimat(_nx - 1) = MESH2D::SOUTH_EAST_ID;
     cimat(_nof_cells - _nx) = MESH2D::NORTH_WEST_ID;
     cimat(_nof_cells - 1) = MESH2D::NORTH_EAST_ID;
 
-    // Mark North boundary cells (excluding corners)
-    i = _nz - 1;  // Last row
+    i = _nz - 1;
     for (j = 1; j < _nx - 1; ++j) {
         ci = i * _nx + j;
         cimat(ci) = MESH2D::NORTH_ID;
     }
 
-    // Mark West boundary cells (excluding corners)
-    j = 0;  // First column
-    for (i = 1; i < _nz - 1; ++i) { 
+    j = 0;
+    for (i = 1; i < _nz - 1; ++i) {
         ci = i * _nx + j;
         cimat(ci) = MESH2D::WEST_ID;
     }
 
-    // Mark East boundary cells (excluding corners)
-    j = _nx - 1;  // Last column
+    j = _nx - 1;
     for (i = 1; i < _nz - 1; ++i) {
         ci = i * _nx + j;
         cimat(ci) = MESH2D::EAST_ID;
     }
 
-    // Mark South boundary cells (excluding corners)
-    i = 0;  // First row
+    i = 0;
     for (j = 1; j < _nx - 1; ++j) {
         ci = i * (_nx - 1) + j;
         cimat(ci) = MESH2D::SOUTH_ID;
     }
 
-    // Mark interior cells (non-boundary nodes)
     for (i = 1; i < _nz - 1; ++i) {
         for (j = 1; j < _nx - 1; ++j) {
             ci = i * _nx + j;
@@ -312,49 +290,37 @@ void StructuredMesh::assemble_cimat_quadrilateral()
 
 void StructuredMesh::assemble_dimat()
 {
-    // Compute the width of the domain in the x-direction
     double domain_width = pmat(Eigen::last, 0) - pmat(0, 0);
 
-    // Tolerances for boundary identification based on mesh resolution
     double xtol = domain_width * 1e-3 / _hl;
     double ztol = 1e-3 / _vl;
 
-    // Iterate over all degrees of freedom (DOFs)
     for (int i = 0; i < _nof_dofs; ++i) {
 
-        // Check if the current DOF lies in the North-West corner of the domain
         if (pmat(i, 1) > 1.0 - ztol && pmat(i, 0) < xtol)
             dimat(i) = MESH2D::NORTH_WEST_ID;
 
-        // Check if the current DOF lies in the South-West corner of the domain
         else if (pmat(i, 1) < ztol && pmat(i, 0) < xtol)
             dimat(i) = MESH2D::SOUTH_WEST_ID;
 
-        // Check if the current DOF lies in the South-East corner of the domain
         else if (pmat(i, 1) < ztol && pmat(i, 0) > 1.0 - xtol)
             dimat(i) = MESH2D::SOUTH_EAST_ID;
 
-        // Check if the current DOF lies in the North-East corner of the domain
         else if (pmat(i, 1) > 1.0 - ztol && pmat(i, 0) > 1.0 - xtol)
             dimat(i) = MESH2D::NORTH_EAST_ID;
 
-        // Check if the current DOF lies on the North edge (excluding corners)
         else if (pmat(i, 1) > 1.0 - ztol)
             dimat(i) = MESH2D::NORTH_ID;
 
-        // Check if the current DOF lies on the South edge (excluding corners)
         else if (pmat(i, 1) < ztol)
             dimat(i) = MESH2D::SOUTH_ID;
 
-        // Check if the current DOF lies on the West edge (excluding corners)
         else if (pmat(i, 0) < xtol)
             dimat(i) = MESH2D::WEST_ID;
 
-        // Check if the current DOF lies on the East edge (excluding corners)
         else if (pmat(i, 0) > 1.0 - xtol)
             dimat(i) = MESH2D::EAST_ID;
 
-        // Otherwise, the current DOF lies in the interior of the domain
         else
             dimat(i) = MESH2D::INTERIOR_ID;
     }
@@ -364,71 +330,58 @@ void StructuredMesh::assemble_eimat()
 {
     int dpe = _dofs_per_edge;
 
-    // Initialize the edge matrix with zeros, where each row corresponds to an edge and each column
-    // stores boundary information and node indices for the edge
     eimat = Eigen::MatrixXi::Zero(_nof_edges, dpe + 1);
 
-    // Compute domain width in the x-direction
     double domain_width = pmat(Eigen::last, 0) - pmat(0, 0);
 
-    // Define tolerances for boundary identification
-    double xtol = domain_width * 1e-3 / _hl; 
+    double xtol = domain_width * 1e-3 / _hl;
     double ztol = 1e-3 / _vl;
 
-    // Classify edges based on the positions of the nodes
     for (int ei = 0; ei < emat.rows(); ++ei) {
-        // Get the horizontal and vertical positions of the two nodes defining the edge
         double x1 = pmat(emat(ei, 0), 0);
         double z1 = pmat(emat(ei, 0), 1);
         double x2 = pmat(emat(ei, 1), 0);
         double z2 = pmat(emat(ei, 1), 1);
 
-        // Check the boundary conditions for the edge and assign the appropriate ID
         if (z1 > 1.0 - ztol && z2 > 1.0 - ztol)
-            eimat(ei, 0) = MESH2D::NORTH_ID;  // Edge is on the North boundary
+            eimat(ei, 0) = MESH2D::NORTH_ID;
         else if (z1 < ztol && z2 < ztol)
-            eimat(ei, 0) = MESH2D::SOUTH_ID;  // Edge is on the South boundary
+            eimat(ei, 0) = MESH2D::SOUTH_ID;
         else if (x1 < xtol && x2 < xtol)
-            eimat(ei, 0) = MESH2D::WEST_ID;   // Edge is on the West boundary
+            eimat(ei, 0) = MESH2D::WEST_ID;
         else if (x1 > 1.0 - xtol && x2 > 1.0 - xtol)
-            eimat(ei, 0) = MESH2D::EAST_ID;   // Edge is on the East boundary
+            eimat(ei, 0) = MESH2D::EAST_ID;
         else
-            eimat(ei, 0) = MESH2D::INTERIOR_ID;  // Edge is in the interior
+            eimat(ei, 0) = MESH2D::INTERIOR_ID;
     }
 
-    // Set of visited edges to avoid duplicating edges in the matrix
     std::set<std::tuple<int, int>> visited_edges;
     std::tuple<int, int> edge;
 
     int v1, v2;
-    int ei = 0;  // Edge index
-    // Iterate over all cells in the connectivity matrix (cmat) to assign DOFs to edges
+    int ei = 0;
     for (int ci = 0; ci < cmat.rows(); ++ci) {
-        Eigen::VectorXi cell = cmat.row(ci);  // Get the nodes of the current cell
+        Eigen::VectorXi cell = cmat.row(ci);
 
-        // Iterate over all edges in the cell
         for (int i = 0; i < _edges_per_cell; ++i) {
-            // Get the two nodes defining the edge
             v1 = cell(i * _degree);
             if (i != _edges_per_cell - 1)
                 v2 = cell((i + 1) * _degree);
             else
-                v2 = cell(0);  // Last edge wraps around to the first node
+                v2 = cell(0);
 
-            // Sort the edge nodes to maintain consistent ordering (smaller node index first)
             if (v1 < v2)
                 edge = std::tuple<int, int>(v1, v2);
             else
                 edge = std::tuple<int, int>(v2, v1);
 
-            // Process edge only if it has not been visited yet
             if (visited_edges.find(edge) == visited_edges.end()) {
-                eimat(ei, 1) = v1;  // Assign the first node to the edge
-                eimat(ei, dpe) = v2;  // Assign the second node to the edge
+                eimat(ei, 1) = v1;
+                eimat(ei, dpe) = v2;
                 if (_degree == 2)
-                    eimat(ei, 2) = cell(i * _degree + 1);  // For degree 2 elements, assign the middle node
-                visited_edges.insert(edge);  // Mark the edge as visited
-                ei++;  // Move to the next edge
+                    eimat(ei, 2) = cell(i * _degree + 1);
+                visited_edges.insert(edge);
+                ei++;
             }
         }
     }
@@ -464,24 +417,18 @@ bool inline StructuredMesh::is_corner_dof(int vi)
 
 void StructuredMesh::compute_edge_normals_and_tangents()
 {
-    // Initialize the edge_tangents and edge_normals matrices with zeros
     edge_tangents = Eigen::MatrixXd::Zero(_nof_edges, 2);
     edge_normals = Eigen::MatrixXd::Zero(_nof_edges, 2);
 
-    // Extract the indices of the boundary edges
     std::vector<int> boundary_einds = extract_edge_inds(MESH2D::BOUNDARY_ID);
 
-    // Loop over each boundary edge and compute its tangent and normal
     for (int ei : boundary_einds) {
-        // Get the vertex indices defining the boundary edge
         int v1 = eimat(ei, 1);
         int v2 = eimat(ei, _dofs_per_edge);
 
-        // Compute the tangent vector (vector from v1 to v2) and normalize it
         edge_tangents(ei, Eigen::all) = pmat.row(v2) - pmat.row(v1);
         edge_tangents(ei, Eigen::all) /= edge_tangents.row(ei).norm();
 
-        // Compute the normal as a perpendicular vector to the tangent
         edge_normals(ei, 0) = edge_tangents(ei, 1);
         edge_normals(ei, 1) = -edge_tangents(ei, 0);
     }
@@ -493,27 +440,24 @@ void StructuredMesh::compute_dof_normals_and_tangents()
     dof_tangents = Eigen::MatrixXd::Zero(_nof_dofs, 2);
     dof_normals = Eigen::MatrixXd::Zero(_nof_dofs, 2);
 
-    // Compute normals/tangents for vertex dofs
     std::vector<int> boundary_einds = extract_edge_inds(MESH2D::BOUNDARY_ID);
     for (int i = 0; i < boundary_einds.size(); ++i) {
         int ei = boundary_einds[i];
         int v1 = eimat(ei, 1);
         int v2 = eimat(ei, _dofs_per_edge);
-        // Exclude corners
+
         dof_tangents(v1, Eigen::all) += edge_tangents.row(ei);
         dof_normals(v1, Eigen::all) += edge_normals.row(ei);
         dof_tangents(v2, Eigen::all) += edge_tangents.row(ei);
         dof_normals(v2, Eigen::all) += edge_normals.row(ei);
     }
 
-    // Normalize vertex dofs normals/tangents
     std::vector<int> boundary_vertex_dofs = extract_vertex_dof_inds(MESH2D::BOUNDARY_ID);
     for (int di: boundary_vertex_dofs) {
         dof_tangents(di, Eigen::all) /= dof_tangents.row(di).norm();
         dof_normals(di, Eigen::all) /= dof_normals.row(di).norm();
     }
 
-    // Compute normals/tangents for edge dofs
     if (_degree == 2)
         for (int ei: boundary_einds) {
             int ve = eimat(ei, 2);
@@ -521,7 +465,6 @@ void StructuredMesh::compute_dof_normals_and_tangents()
             dof_normals(ve, Eigen::all) = edge_normals.row(ei);
         }
 
-    // Set normal/tangent at SW corner to edge normal/tangent
     dof_tangents(
         corner_dof_SW(), Eigen::all
     ) = dof_tangents(corner_dof_SW()+1, Eigen::all);
@@ -529,7 +472,6 @@ void StructuredMesh::compute_dof_normals_and_tangents()
         corner_dof_SW(), Eigen::all
     ) = dof_normals(corner_dof_SW()+1, Eigen::all);
 
-    // Set normal/tangent at SE corner to edge normal/tangent
     dof_tangents(
         corner_dof_SE(), Eigen::all
     ) = dof_tangents(corner_dof_SE()-1, Eigen::all);
@@ -537,7 +479,6 @@ void StructuredMesh::compute_dof_normals_and_tangents()
         corner_dof_SE(), Eigen::all
     ) = dof_normals(corner_dof_SE()-1, Eigen::all);
 
-    // Set normal/tangent at NE corner to edge normal/tangent
     dof_tangents(
         corner_dof_NE(), Eigen::all
     ) = dof_tangents(corner_dof_NE()-1, Eigen::all);
@@ -545,7 +486,6 @@ void StructuredMesh::compute_dof_normals_and_tangents()
         corner_dof_NE(), Eigen::all
     ) = dof_normals(corner_dof_NE()-1, Eigen::all);
 
-    // Set normal/tangent at NW corner to edge normal/tangent
     dof_tangents(
         corner_dof_NW(), Eigen::all
     ) = dof_tangents(corner_dof_NW()+1, Eigen::all);
@@ -556,10 +496,7 @@ void StructuredMesh::compute_dof_normals_and_tangents()
 
 void StructuredMesh::compute_vertex_normals_and_tangents()
 {
-    // Compute the tangents for the vertices based on the DOF indices
     vertex_tangents = dof_tangents(vertex_dof_inds, Eigen::all);
-
-    // Compute the normals for the vertices based on the DOF indices
     vertex_normals = dof_normals(vertex_dof_inds, Eigen::all);
 }
 
@@ -609,41 +546,28 @@ std::vector<int> StructuredMesh::extract_dof_inds(int id)
 
 void StructuredMesh::extrude_x(double x0, double x1)
 {
-    // Create a vector of ones with the same size as the number of DOFs
     Eigen::VectorXd ones = Eigen::VectorXd::Ones(pmat.rows());
-
-    // Perform linear interpolation of x-coordinates between x0 and x1
     pmat(Eigen::all, 0) = (ones - pmat(Eigen::all, 0)) * x0 + pmat(Eigen::all, 0) * x1;
-
-    // Recompute boundary normals and tangents to maintain mesh consistency
     compute_normals_and_tangents();
 }
 
 void StructuredMesh::extrude_x(const Eigen::VectorXd &xvec_p1)
 {
-    // Initialize the x_vec to store the extruded values
     Eigen::VectorXd x_vec;
 
-    // For degree 1 elements, use the input vector directly
     if (_degree == 1)
         x_vec = xvec_p1;
-    // For degree 2 elements, expand the vector and interpolate internal nodes
     else if (_degree == 2) {
         x_vec = Eigen::VectorXd::Zero(_hl + 1);
-
-        // Copy the input vector values at every second position in x_vec
         x_vec(Eigen::seq(0, Eigen::last, 2)) = xvec_p1;
 
-        // Set x coordinate of internal nodes
         for (int i = 1; i < x_vec.size() - 1; i += 2)
             x_vec(i) = 0.5 * (x_vec(i - 1) + x_vec(i + 1));
     }
 
-    // Fill in the mesh coordinates along the x-direction (pmat) using the extruded values
     int dof = 0;
     for (int i = 0; i < _vl + 1; ++i) {
         for (int j = 0; j < _hl + 1; ++j) {
-            // Assign the extruded x-coordinate to the pmat matrix
             pmat(dof, 0) = x_vec(j);
             dof++;
         }
@@ -658,27 +582,21 @@ void StructuredMesh::extrude_z(
     std::function<double (double)> zs_expr
 )
 {
-    // Extract indices of surface vertices
     std::vector<int> surf_vert_inds = extract_vertex_dof_inds(MESH2D::SURFACE_ID);
 
-    // Get the x-coordinates of surface vertices
     Eigen::VectorXd xvec_p1 = pmat(surf_vert_inds, 0);
 
-    // Compute bottom and top surface elevations using the provided functions
     Eigen::VectorXd zb_vec_p1 = xvec_p1.unaryExpr(zb_expr);
     Eigen::VectorXd zs_vec_p1 = xvec_p1.unaryExpr(zs_expr);
 
-    // Perform the extrusion using the computed surface elevations
     extrude_z(zb_vec_p1, zs_vec_p1);
 }
 
 void StructuredMesh::extrude_z(const Eigen::VectorXd &zs_vec_p1)
 {
-    // Extract the z-coordinates of the bedrock surface from the current mesh
     std::vector<int> bed_vert_inds = extract_vertex_dof_inds(MESH2D::BED_ID);
     Eigen::VectorXd zb_vec_p1 = pmat(bed_vert_inds, 1);
 
-    // Call the main extrude_z function with the existing bottom surface and new top surface
     extrude_z(zb_vec_p1, zs_vec_p1);
 }
 
@@ -821,49 +739,37 @@ int StructuredMesh::degree()
 
 double StructuredMesh::area()
 {
-    // Declare matrices and vectors for storing node coordinates, quadrature points,
-    // Lagrange basis functions, derivatives, and other intermediate results.
     Eigen::MatrixXd node_coords, qpoints_rs, qpoints_xz, phi_rs, dphi_rs, dphi_xz;
     Eigen::VectorXd qweights, detJ_rs;
     Eigen::VectorXi element;
 
-    // Perform Gauss-Legendre quadrature to obtain the quadrature points and weights
-    // in reference coordinates for integration.
     FEM2D::gauss_legendre_quadrature(
         1, cell_type(), qpoints_rs, qweights
     );
 
-    // Compute Lagrange basis functions and their derivatives at the quadrature points
     FEM2D::lagrange_basis(
         degree(), cell_type(), qpoints_rs, phi_rs, dphi_rs
     );
 
-    // Initialize the Jacobian determinant vector and quadrature points in physical coordinates.
     detJ_rs = Eigen::VectorXd::Zero(qpoints_rs.rows());
     qpoints_xz = Eigen::MatrixXd::Zero(qpoints_rs.rows(), 2);
     dphi_xz = Eigen::MatrixXd::Zero(2 * qpoints_rs.rows(), dofs_per_cell());
 
-    // Initialize the total area to zero.
     double _area = 0.0;
 
-    // Iterate over all cells in the mesh (cmat contains the connectivity matrix of the mesh).
     for (int k = 0; k < cmat.rows(); ++k) {
-        element = cmat.row(k); // Get the node indices for the current element.
-        node_coords = pmat(element, Eigen::all); // Get the coordinates of the nodes.
+        element = cmat.row(k);
+        node_coords = pmat(element, Eigen::all);
 
-        // Map the quadrature points from the reference cell to the physical cell using
-        // the Lagrange basis functions and compute the Jacobian determinant.
         FEM2D::map_to_reference_cell(
             degree(), cell_type(), node_coords, qpoints_rs,
             phi_rs, dphi_rs, detJ_rs, qpoints_xz, dphi_xz
         );
 
-        // For each quadrature point, accumulate the contribution to the area.
         for (int q = 0; q < qpoints_rs.rows(); ++q) {
-            _area += fabs(detJ_rs(q)) * qweights(q); // Add the area contribution from this quadrature point.
+            _area += fabs(detJ_rs(q)) * qweights(q);
         }
     }
 
-    // Return the computed total area of the mesh.
     return _area;
 }

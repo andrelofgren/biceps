@@ -18,7 +18,7 @@
  */
 #include <fem_1d.hpp>
 
-void FEM1D::map_to_reference_cell(
+void FEM1D::map_from_reference_cell(
     int degree, 
     Eigen::MatrixXd &node_coords,
     Eigen::VectorXd &qpoints_r,
@@ -31,14 +31,9 @@ void FEM1D::map_to_reference_cell(
     Eigen::VectorXd dF;
 
     for (int i = 0; i < qpoints_r.rows(); i++) {
-        // Compute the determinant of the Jacobian (dF.norm() gives the norm of the gradient vector)
         dF = grad_phi_r(i, Eigen::all) * node_coords;
-        detJ_r_ret(i) = dF.norm();  // Store the determinant of Jacobian at the i-th quadrature point
-
-        // Compute the physical quadrature points by multiplying shape functions with node coordinates
+        detJ_r_ret(i) = dF.norm();
         qpoints_x_ret(i, Eigen::all) = phi_r(i, Eigen::all) * node_coords;
-
-        // Compute the gradient of shape functions in physical space using the Jacobian determinant
         grad_phi_x_ret(i, Eigen::all) = 1.0 / detJ_r_ret(i) * grad_phi_r(i, Eigen::all);
     }
 }
@@ -75,7 +70,7 @@ void FEM1D::lagrange_basis(
 Eigen::MatrixXd FEM1D::reference_element_points_rs(
     const int degree
 ) {
-    IntervalMesh mesh(0.0, 1.0, 1, degree);	
+    IntervalMesh mesh(0.0, 1.0, 1, degree);
     Eigen::MatrixXd ref_coords = mesh.pmat(mesh.cmat.row(0), Eigen::all);
     return ref_coords;
 }
@@ -139,72 +134,61 @@ void FEM1D::gauss_legendre_quadrature(
 }
 
 Eigen::SparseMatrix<double> FEM1D::assemble_mass_matrix(IntervalMesh &mesh, int gp) {
-    // Local variables for node coordinates, quadrature points, shape functions, and Jacobian determinants
-    Eigen::MatrixXd node_coords, qpoints_x, phi_r, dphi_r, dphi_x;
-    Eigen::VectorXd qweights, qpoints_r, detJ_r;
-    Eigen::VectorXi element;
     std::vector<Eigen::Triplet<double>> mat_coeffs;
 
-    // Initialize the sparse matrix to store the mass matrix
     Eigen::SparseMatrix<double> M_sp_ret = Eigen::SparseMatrix<double>(
         mesh.nof_dofs(), mesh.nof_dofs()
     );
 
-    // Compute Gauss-Legendre quadrature points and weights
+    Eigen::MatrixXd node_coords, qpoints_x, phi_r, dphi_r, dphi_x;
+    Eigen::VectorXd qweights, qpoints_r, detJ_r;
+    Eigen::VectorXi element;
+
     FEM1D::gauss_legendre_quadrature(gp, qpoints_r, qweights);
-    // Compute Lagrange basis functions and their derivatives at quadrature points
     FEM1D::lagrange_basis(mesh.degree(), qpoints_r, phi_r, dphi_r);
 
-    // Initialize arrays to store quadrature points in physical space and derivatives
     qpoints_x = Eigen::MatrixXd::Zero(qpoints_r.rows(), 2);
     detJ_r = Eigen::VectorXd::Zero(qpoints_r.rows());
     dphi_x = Eigen::MatrixXd::Zero(
         qpoints_r.rows(), mesh.dofs_per_cell()
     );
 
-    // Block matrix for local mass matrix contributions
     Eigen::MatrixXd M_block = Eigen::MatrixXd::Zero(
         mesh.dofs_per_cell(), mesh.dofs_per_cell()
     );
 
-    // Loop over each element of the mesh
     for (int ci = 0; ci < mesh.nof_cells(); ci++) {
-        element = mesh.cmat(ci, Eigen::all);  // Element connectivity
-        node_coords = mesh.pmat(element, Eigen::all);  // Node coordinates for the current element
+        element = mesh.cmat(ci, Eigen::all);
+        node_coords = mesh.pmat(element, Eigen::all);
 
-        // Map quadrature points from reference cell to physical cell
-        FEM1D::map_to_reference_cell(
+        FEM1D::map_from_reference_cell(
             mesh.degree(), node_coords, qpoints_r,
             phi_r, dphi_r, detJ_r, qpoints_x, dphi_x
         );
 
-        // Loop over the quadrature points to calculate the local mass matrix
         for (int q = 0; q < qpoints_r.rows(); q++) {
-            double detJxW = qweights(q) * detJ_r(q);  // Weighted Jacobian determinant
+            double detJxW = qweights(q) * detJ_r(q);
             for (int i = 0; i < mesh.dofs_per_cell(); i++) {
                 for (int j = 0; j < mesh.dofs_per_cell(); j++) {
-                    M_block(i, j) += phi_r(q, i) * phi_r(q, j) * detJxW;  // Assemble mass matrix block
+                    M_block(i, j) += phi_r(q, i) * phi_r(q, j) * detJxW;
                 }
             }
         }
 
-        // Add local contributions to the global sparse matrix
         for (int i = 0; i < mesh.dofs_per_cell(); i++) {
             for (int j = 0; j < mesh.dofs_per_cell(); j++) {
                 mat_coeffs.push_back(Eigen::Triplet<double>(
-                    element(i),  ///< Global row index
-                    element(j),  ///< Global column index
-                    M_block(i, j)  ///< Matrix entry value
+                    element(i),
+                    element(j),
+                    M_block(i, j)
                 ));
             }
         }
-
-        // Reset the block matrix for the next element
         M_block.setZero();
     }
 
-    // Create the sparse matrix from the list of triplets
     M_sp_ret.setFromTriplets(mat_coeffs.begin(), mat_coeffs.end());
+
     return M_sp_ret;
 }
 

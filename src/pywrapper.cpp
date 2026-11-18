@@ -317,6 +317,7 @@ BOOST_PYTHON_MODULE(biceps)
     .def_readwrite("picard_stol", &pStokesProblem::picard_stol)
     .def_readwrite("picard_max_iter", &pStokesProblem::picard_max_iter)
     .def_readonly("nof_pushed_elements", &pStokesProblem::nof_pushed_elements)
+    .def_readonly("lhs_mat", &pStokesProblem::lhs_mat)
     .def_readonly("rhs_vec", &pStokesProblem::rhs_vec)
     .def_readonly("w_vec", &pStokesProblem::w_vec);
 

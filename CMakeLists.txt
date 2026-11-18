@@ -70,46 +70,6 @@ else()
     message(STATUS "Python interface will not be built.")
 endif()
 
-# Check for documentation dependencies (optional)
-find_package(Doxygen QUIET)
-if(ENABLE_DOCS AND DOXYGEN_FOUND)
-    message(STATUS "Doxygen found, enabling documentation target.")
-
-    set(DOXYGEN_OUTPUT_DIR ${CMAKE_BINARY_DIR}/docs)
-    set(DOXYGEN_CONFIG_FILE ${CMAKE_BINARY_DIR}/Doxyfile)
-
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in ${DOXYGEN_CONFIG_FILE} @ONLY)
-
-    add_custom_target(
-        docs
-        COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_CONFIG_FILE}
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-        COMMENT "Generate documentation using Doxygen"
-        VERBATIM
-    )
-
-    # Install documentation (HTML and LaTeX if enabled)
-    if(DOXYGEN_HTML)
-        install(
-            DIRECTORY ${DOXYGEN_OUTPUT_DIR}/html
-            DESTINATION share/doc/biceps
-            PATTERN ".*" EXCLUDE
-        )
-    endif()
-
-    if(DOXYGEN_LATEX)
-        install(
-            DIRECTORY ${DOXYGEN_OUTPUT_DIR}/latex
-            DESTINATION share/doc/biceps
-            PATTERN ".*" EXCLUDE
-        )
-    endif()
-elseif(ENABLE_DOCS AND NOT DOXYGEN_FOUND)
-    message(WARNING "Doxygen not found, but ENABLE_DOCS is ON. Documentation target disabled.")
-else()
-    message(STATUS "Documentation will not be built.")
-endif()
-
 # Check for unit testing dependency (optional)
 find_package(Boost 1.74 COMPONENTS unit_test_framework QUIET)
 if(ENABLE_TESTS AND Boost_UNIT_TEST_FRAMEWORK_FOUND)

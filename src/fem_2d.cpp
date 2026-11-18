@@ -190,6 +190,7 @@ Eigen::MatrixXd FEM2D::reference_element_points_rs(
     // Triangle reference element is defined to have a right cut
     if (cell_type == MESH2D::TRIANGLE_LEFT)
         cell_type = MESH2D::TRIANGLE_RIGHT;
+
     StructuredMesh mesh(1, 1, degree, cell_type);
     Eigen::MatrixXd ref_coords = mesh.pmat(mesh.cmat.row(0), Eigen::all);
     return ref_coords;
@@ -473,64 +474,49 @@ void FEM2D::gauss_legendre_quadrature(
 Eigen::SparseMatrix<double> FEM2D::assemble_mass_matrix(
     StructuredMesh &mesh, int gp
 ) {
-    // Vector to store the non-zero coefficients of the mass matrix
     std::vector<Eigen::Triplet<double>> mat_coeffs;
 
-    // Matrices and vectors for storing quadrature points, shape functions, and derivatives
+    Eigen::SparseMatrix<double> M_sp_ret = Eigen::SparseMatrix<double>(mesh.nof_dofs(), mesh.nof_dofs());
+
     Eigen::MatrixXd node_coords, qpoints_rs, qpoints_xz, phi_rs, dphi_rs, dphi_xz;
     Eigen::VectorXd qweights, detJ_rs;
     Eigen::VectorXi element;
 
-    // Initialize the sparse mass matrix with appropriate dimensions
-    Eigen::SparseMatrix<double> M_sp_ret = Eigen::SparseMatrix<double>(mesh.nof_dofs(), mesh.nof_dofs());
-
-    // Compute Gauss-Legendre quadrature points and weights
     FEM2D::gauss_legendre_quadrature(
         gp, mesh.cell_type(), qpoints_rs, qweights
     );
 
-    // Compute Lagrange basis functions and their derivatives at quadrature points
     FEM2D::lagrange_basis(
         mesh.degree(), mesh.cell_type(), qpoints_rs, phi_rs, dphi_rs
     );
 
-    // Initialize storage for determinant of Jacobian and transformed quadrature points
     detJ_rs = Eigen::VectorXd::Zero(qpoints_rs.rows());
     qpoints_xz = Eigen::MatrixXd::Zero(qpoints_rs.rows(), 2);
     dphi_xz = Eigen::MatrixXd::Zero(2 * qpoints_rs.rows(), mesh.dofs_per_cell());
 
-    // Local mass matrix block for each element
     Eigen::MatrixXd M_block = Eigen::MatrixXd::Zero(
         mesh.dofs_per_cell(), mesh.dofs_per_cell()
     );
 
-    // Loop over all elements in the mesh
     for (int k = 0; k < mesh.cmat.rows(); k++) {
-        // Get the global indices of the nodes in the element
         element = mesh.cmat.row(k);
-        // Retrieve the node coordinates for the current element
         node_coords = mesh.pmat(element, Eigen::all);
 
-        // Map quadrature points to the reference element and compute shape functions
-        FEM2D::map_to_reference_cell(
+        FEM2D::map_from_reference_cell(
             mesh.degree(), mesh.cell_type(), node_coords, qpoints_rs,
             phi_rs, dphi_rs, detJ_rs, qpoints_xz, dphi_xz
         );
 
-        // Compute the local mass matrix contribution for the element
         for (int q = 0; q < qpoints_rs.rows(); q++) {
-            // Compute the determinant of the Jacobian multiplied by quadrature weight
-            double detJxW = fabs(detJ_rs(q)) * qweights(q);
+            double detJxW = fabs(detJ_rs(q))*qweights(q);
 
-            // Compute the element mass matrix using shape function values
             for (int i = 0; i < mesh.dofs_per_cell(); i++) {
                 for (int j = 0; j < mesh.dofs_per_cell(); j++) {
-                    M_block(i, j) += phi_rs(q, i) * phi_rs(q, j) * detJxW;
+                    M_block(i, j) += phi_rs(q, i)*phi_rs(q, j)*detJxW;
                 }
             }
         }
 
-        // Store the local mass matrix values in the triplet format for the sparse matrix
         for (int i = 0; i < mesh.dofs_per_cell(); i++) {
             for (int j = 0; j < mesh.dofs_per_cell(); j++) {
                 mat_coeffs.push_back(Eigen::Triplet<double>(
@@ -541,44 +527,32 @@ Eigen::SparseMatrix<double> FEM2D::assemble_mass_matrix(
             }
         }
 
-        // Reset the local mass matrix for the next element
         M_block.setZero();
     }
 
-    // Assemble the global sparse mass matrix from triplet values
     M_sp_ret.setFromTriplets(mat_coeffs.begin(), mat_coeffs.end());
+
     return M_sp_ret;
 }
 
-/**
- * @brief Assembles the stiffness matrix for the finite element method.
- *
- * This function constructs the stiffness matrix by integrating the gradient of basis functions
- * over the reference element and mapping them to the physical domain.
- *
- * @param[in] mesh The structured mesh representing the computational domain.
- * @param[in] gp The number of Gauss points used for numerical integration.
- * @return Eigen::SparseMatrix<double> The assembled stiffness matrix.
- */
 Eigen::SparseMatrix<double> FEM2D::assemble_stiffness_matrix(
     StructuredMesh &mesh, int gp
 ) {
-    std::vector<Eigen::Triplet<double>> mat_coeffs; // Triplet list for sparse matrix construction
-    Eigen::MatrixXd node_coords_v, qpoints_rs, qpoints_xz,
-        phi_rs, dphi_rs, dphi_xz;
-    Eigen::VectorXd qweights, detJ_rs;
-    Eigen::VectorXi element;
+    std::vector<Eigen::Triplet<double>> mat_coeffs; 
 
     Eigen::SparseMatrix<double> A_sp_ret = Eigen::SparseMatrix<double>(
         mesh.nof_dofs(), mesh.nof_dofs()
     );
 
-    // Compute quadrature points and weights for numerical integration
+    Eigen::MatrixXd node_coords_v, qpoints_rs, qpoints_xz,
+        phi_rs, dphi_rs, dphi_xz;
+    Eigen::VectorXd qweights, detJ_rs;
+    Eigen::VectorXi element;
+
     FEM2D::gauss_legendre_quadrature(
         gp, mesh.cell_type(), qpoints_rs, qweights
     );
 
-    // Compute Lagrange basis functions and their derivatives at quadrature points
     FEM2D::lagrange_basis(
         mesh.degree(),
         mesh.cell_type(),
@@ -590,36 +564,33 @@ Eigen::SparseMatrix<double> FEM2D::assemble_stiffness_matrix(
     qpoints_xz = Eigen::MatrixXd::Zero(qpoints_rs.rows(), 2);
     dphi_xz = Eigen::MatrixXd::Zero(2 * qpoints_rs.rows(), mesh.dofs_per_cell());
 
-    // Local element stiffness matrix
     Eigen::MatrixXd A_block = Eigen::MatrixXd::Zero(
         mesh.dofs_per_cell(), mesh.dofs_per_cell()
     );
 
-    // Loop over all elements in the mesh
     for (int k = 0; k < mesh.cmat.rows(); k++) {
         element = mesh.cmat.row(k);
         node_coords_v = mesh.pmat(element, Eigen::all);
 
-        // Map quadrature points and basis functions to the reference element
-        FEM2D::map_to_reference_cell(
+        FEM2D::map_from_reference_cell(
             mesh.degree(), mesh.cell_type(), node_coords_v, qpoints_rs,
             phi_rs, dphi_rs, detJ_rs, qpoints_xz, dphi_xz
         );
 
-        // Compute local stiffness matrix contributions
         for (int q = 0; q < qpoints_rs.rows(); q++) {
-            int w = 2 * q;
+            int wx = 2*q;
+            int wz = wx + 1;
             double detJxW = fabs(detJ_rs(q)) * qweights(q);
+
             for (int i = 0; i < mesh.dofs_per_cell(); i++) {
                 for (int j = 0; j < mesh.dofs_per_cell(); j++) {
                     A_block(i, j) += (
-                        dphi_xz(w, i) * dphi_xz(w, j) + dphi_xz(w+1, i) * dphi_xz(w+1, j)
-                    ) * detJxW;
+                        dphi_xz(wx, i)*dphi_xz(wx, j) + dphi_xz(wz, i)*dphi_xz(wz, j)
+                    )*detJxW;
                 }
             }
         }
 
-        // Convert local matrix to sparse format and add to global stiffness matrix
         for (int i = 0; i < mesh.dofs_per_cell(); i++) {
             for (int j = 0; j < mesh.dofs_per_cell(); j++) {
                 mat_coeffs.push_back(Eigen::Triplet<double>(
@@ -629,10 +600,10 @@ Eigen::SparseMatrix<double> FEM2D::assemble_stiffness_matrix(
                 ));
             }
         }
-        A_block.setZero(); // Reset local matrix for the next element
+
+        A_block.setZero();
     }
 
-    // Construct sparse global stiffness matrix
     A_sp_ret.setFromTriplets(mat_coeffs.begin(), mat_coeffs.end());
     return A_sp_ret;
 }
@@ -640,22 +611,21 @@ Eigen::SparseMatrix<double> FEM2D::assemble_stiffness_matrix(
 Eigen::SparseMatrix<double> FEM2D::assemble_stiffness_xx_matrix(
     StructuredMesh &mesh, int gp
 ) {
-    std::vector<Eigen::Triplet<double>> mat_coeffs; // Triplet list for sparse matrix construction
-    Eigen::MatrixXd node_coords_v, qpoints_rs, qpoints_xz,
-        phi_rs, dphi_rs, dphi_xz;
-    Eigen::VectorXd qweights, detJ_rs;
-    Eigen::VectorXi element;
+    std::vector<Eigen::Triplet<double>> mat_coeffs; 
 
     Eigen::SparseMatrix<double> A_sp_ret = Eigen::SparseMatrix<double>(
         mesh.nof_dofs(), mesh.nof_dofs()
     );
 
-    // Compute quadrature points and weights for numerical integration
+    Eigen::MatrixXd node_coords_v, qpoints_rs, qpoints_xz,
+        phi_rs, dphi_rs, dphi_xz;
+    Eigen::VectorXd qweights, detJ_rs;
+    Eigen::VectorXi element;
+
     FEM2D::gauss_legendre_quadrature(
         gp, mesh.cell_type(), qpoints_rs, qweights
     );
 
-    // Compute Lagrange basis functions and their derivatives at quadrature points
     FEM2D::lagrange_basis(
         mesh.degree(),
         mesh.cell_type(),
@@ -667,36 +637,30 @@ Eigen::SparseMatrix<double> FEM2D::assemble_stiffness_xx_matrix(
     qpoints_xz = Eigen::MatrixXd::Zero(qpoints_rs.rows(), 2);
     dphi_xz = Eigen::MatrixXd::Zero(2 * qpoints_rs.rows(), mesh.dofs_per_cell());
 
-    // Local element stiffness matrix
     Eigen::MatrixXd A_block = Eigen::MatrixXd::Zero(
         mesh.dofs_per_cell(), mesh.dofs_per_cell()
     );
 
-    // Loop over all elements in the mesh
     for (int k = 0; k < mesh.cmat.rows(); k++) {
         element = mesh.cmat.row(k);
         node_coords_v = mesh.pmat(element, Eigen::all);
 
-        // Map quadrature points and basis functions to the reference element
-        FEM2D::map_to_reference_cell(
+        FEM2D::map_from_reference_cell(
             mesh.degree(), mesh.cell_type(), node_coords_v, qpoints_rs,
             phi_rs, dphi_rs, detJ_rs, qpoints_xz, dphi_xz
         );
 
-        // Compute local stiffness matrix contributions
         for (int q = 0; q < qpoints_rs.rows(); q++) {
-            int w = 2 * q;
-            double detJxW = fabs(detJ_rs(q)) * qweights(q);
+            int wx = 2 * q;
+            double detJxW = fabs(detJ_rs(q))*qweights(q);
+
             for (int i = 0; i < mesh.dofs_per_cell(); i++) {
                 for (int j = 0; j < mesh.dofs_per_cell(); j++) {
-                    A_block(i, j) += (
-                        dphi_xz(w, i) * dphi_xz(w, j)
-                    ) * detJxW;
+                    A_block(i, j) += dphi_xz(wx, i)*dphi_xz(wx, j)*detJxW;
                 }
             }
         }
 
-        // Convert local matrix to sparse format and add to global stiffness matrix
         for (int i = 0; i < mesh.dofs_per_cell(); i++) {
             for (int j = 0; j < mesh.dofs_per_cell(); j++) {
                 mat_coeffs.push_back(Eigen::Triplet<double>(
@@ -706,10 +670,10 @@ Eigen::SparseMatrix<double> FEM2D::assemble_stiffness_xx_matrix(
                 ));
             }
         }
-        A_block.setZero(); // Reset local matrix for the next element
+
+        A_block.setZero();
     }
 
-    // Construct sparse global stiffness matrix
     A_sp_ret.setFromTriplets(mat_coeffs.begin(), mat_coeffs.end());
     return A_sp_ret;
 }
@@ -717,22 +681,21 @@ Eigen::SparseMatrix<double> FEM2D::assemble_stiffness_xx_matrix(
 Eigen::SparseMatrix<double> FEM2D::assemble_stiffness_zz_matrix(
     StructuredMesh &mesh, int gp
 ) {
-    std::vector<Eigen::Triplet<double>> mat_coeffs; // Triplet list for sparse matrix construction
-    Eigen::MatrixXd node_coords_v, qpoints_rs, qpoints_xz,
-        phi_rs, dphi_rs, dphi_xz;
-    Eigen::VectorXd qweights, detJ_rs;
-    Eigen::VectorXi element;
+    std::vector<Eigen::Triplet<double>> mat_coeffs;
 
     Eigen::SparseMatrix<double> A_sp_ret = Eigen::SparseMatrix<double>(
         mesh.nof_dofs(), mesh.nof_dofs()
     );
 
-    // Compute quadrature points and weights for numerical integration
+    Eigen::MatrixXd node_coords_v, qpoints_rs, qpoints_xz,
+        phi_rs, dphi_rs, dphi_xz;
+    Eigen::VectorXd qweights, detJ_rs;
+    Eigen::VectorXi element;
+
     FEM2D::gauss_legendre_quadrature(
         gp, mesh.cell_type(), qpoints_rs, qweights
     );
 
-    // Compute Lagrange basis functions and their derivatives at quadrature points
     FEM2D::lagrange_basis(
         mesh.degree(),
         mesh.cell_type(),
@@ -744,36 +707,30 @@ Eigen::SparseMatrix<double> FEM2D::assemble_stiffness_zz_matrix(
     qpoints_xz = Eigen::MatrixXd::Zero(qpoints_rs.rows(), 2);
     dphi_xz = Eigen::MatrixXd::Zero(2 * qpoints_rs.rows(), mesh.dofs_per_cell());
 
-    // Local element stiffness matrix
     Eigen::MatrixXd A_block = Eigen::MatrixXd::Zero(
         mesh.dofs_per_cell(), mesh.dofs_per_cell()
     );
 
-    // Loop over all elements in the mesh
     for (int k = 0; k < mesh.cmat.rows(); k++) {
         element = mesh.cmat.row(k);
         node_coords_v = mesh.pmat(element, Eigen::all);
 
-        // Map quadrature points and basis functions to the reference element
-        FEM2D::map_to_reference_cell(
+        FEM2D::map_from_reference_cell(
             mesh.degree(), mesh.cell_type(), node_coords_v, qpoints_rs,
             phi_rs, dphi_rs, detJ_rs, qpoints_xz, dphi_xz
         );
 
-        // Compute local stiffness matrix contributions
         for (int q = 0; q < qpoints_rs.rows(); q++) {
-            int w = 2*q + 1;
-            double detJxW = fabs(detJ_rs(q)) * qweights(q);
+            int wz = 2*q + 1;
+            double detJxW = fabs(detJ_rs(q))*qweights(q);
+
             for (int i = 0; i < mesh.dofs_per_cell(); i++) {
                 for (int j = 0; j < mesh.dofs_per_cell(); j++) {
-                    A_block(i, j) += (
-                        dphi_xz(w, i) * dphi_xz(w, j)
-                    ) * detJxW;
+                    A_block(i, j) += dphi_xz(wz, i)*dphi_xz(wz, j)*detJxW;
                 }
             }
         }
 
-        // Convert local matrix to sparse format and add to global stiffness matrix
         for (int i = 0; i < mesh.dofs_per_cell(); i++) {
             for (int j = 0; j < mesh.dofs_per_cell(); j++) {
                 mat_coeffs.push_back(Eigen::Triplet<double>(
@@ -783,33 +740,33 @@ Eigen::SparseMatrix<double> FEM2D::assemble_stiffness_zz_matrix(
                 ));
             }
         }
-        A_block.setZero(); // Reset local matrix for the next element
+
+        A_block.setZero();
     }
 
-    // Construct sparse global stiffness matrix
     A_sp_ret.setFromTriplets(mat_coeffs.begin(), mat_coeffs.end());
+
     return A_sp_ret;
 }
 
 Eigen::SparseMatrix<double> FEM2D::assemble_stiffness_x_matrix(
     StructuredMesh &mesh, int gp
 ) {
-    std::vector<Eigen::Triplet<double>> mat_coeffs; // Triplet list for sparse matrix construction
-    Eigen::MatrixXd node_coords_v, qpoints_rs, qpoints_xz,
-        phi_rs, dphi_rs, dphi_xz;
-    Eigen::VectorXd qweights, detJ_rs;
-    Eigen::VectorXi element;
+    std::vector<Eigen::Triplet<double>> mat_coeffs;
 
     Eigen::SparseMatrix<double> Ax_sp_ret = Eigen::SparseMatrix<double>(
         mesh.nof_dofs(), mesh.nof_dofs()
     );
 
-    // Compute quadrature points and weights for numerical integration
+    Eigen::MatrixXd node_coords_v, qpoints_rs, qpoints_xz,
+        phi_rs, dphi_rs, dphi_xz;
+    Eigen::VectorXd qweights, detJ_rs;
+    Eigen::VectorXi element;
+
     FEM2D::gauss_legendre_quadrature(
         gp, mesh.cell_type(), qpoints_rs, qweights
     );
 
-    // Compute Lagrange basis functions and their derivatives at quadrature points
     FEM2D::lagrange_basis(
         mesh.degree(),
         mesh.cell_type(),
@@ -821,36 +778,30 @@ Eigen::SparseMatrix<double> FEM2D::assemble_stiffness_x_matrix(
     qpoints_xz = Eigen::MatrixXd::Zero(qpoints_rs.rows(), 2);
     dphi_xz = Eigen::MatrixXd::Zero(2 * qpoints_rs.rows(), mesh.dofs_per_cell());
 
-    // Local element stiffness matrix
     Eigen::MatrixXd Ax_block = Eigen::MatrixXd::Zero(
         mesh.dofs_per_cell(), mesh.dofs_per_cell()
     );
 
-    // Loop over all elements in the mesh
     for (int k = 0; k < mesh.cmat.rows(); k++) {
         element = mesh.cmat.row(k);
         node_coords_v = mesh.pmat(element, Eigen::all);
 
-        // Map quadrature points and basis functions to the reference element
-        FEM2D::map_to_reference_cell(
+        FEM2D::map_from_reference_cell(
             mesh.degree(), mesh.cell_type(), node_coords_v, qpoints_rs,
             phi_rs, dphi_rs, detJ_rs, qpoints_xz, dphi_xz
         );
 
-        // Compute local stiffness matrix contributions
         for (int q = 0; q < qpoints_rs.rows(); q++) {
-            int w = 2*q;
-            double detJxW = fabs(detJ_rs(q)) * qweights(q);
+            int wx = 2*q;
+            double detJxW = fabs(detJ_rs(q))*qweights(q);
+
             for (int i = 0; i < mesh.dofs_per_cell(); i++) {
                 for (int j = 0; j < mesh.dofs_per_cell(); j++) {
-                    Ax_block(i, j) += (
-                        phi_rs(q, i) * dphi_xz(w, j)
-                    ) * detJxW;
+                    Ax_block(i, j) += phi_rs(q, i)*dphi_xz(wx, j)*detJxW;
                 }
             }
         }
 
-        // Convert local matrix to sparse format and add to global stiffness matrix
         for (int i = 0; i < mesh.dofs_per_cell(); i++) {
             for (int j = 0; j < mesh.dofs_per_cell(); j++) {
                 mat_coeffs.push_back(Eigen::Triplet<double>(
@@ -860,33 +811,33 @@ Eigen::SparseMatrix<double> FEM2D::assemble_stiffness_x_matrix(
                 ));
             }
         }
-        Ax_block.setZero(); // Reset local matrix for the next element
+
+        Ax_block.setZero();
     }
 
-    // Construct sparse global stiffness matrix
     Ax_sp_ret.setFromTriplets(mat_coeffs.begin(), mat_coeffs.end());
+
     return Ax_sp_ret;
 }
 
 Eigen::SparseMatrix<double> FEM2D::assemble_stiffness_z_matrix(
     StructuredMesh &mesh, int gp
 ) {
-    std::vector<Eigen::Triplet<double>> mat_coeffs; // Triplet list for sparse matrix construction
-    Eigen::MatrixXd node_coords_v, qpoints_rs, qpoints_xz,
-        phi_rs, dphi_rs, dphi_xz;
-    Eigen::VectorXd qweights, detJ_rs;
-    Eigen::VectorXi element;
+    std::vector<Eigen::Triplet<double>> mat_coeffs;
 
     Eigen::SparseMatrix<double> Az_sp_ret = Eigen::SparseMatrix<double>(
         mesh.nof_dofs(), mesh.nof_dofs()
     );
 
-    // Compute quadrature points and weights for numerical integration
+    Eigen::MatrixXd node_coords_v, qpoints_rs, qpoints_xz,
+        phi_rs, dphi_rs, dphi_xz;
+    Eigen::VectorXd qweights, detJ_rs;
+    Eigen::VectorXi element;
+
     FEM2D::gauss_legendre_quadrature(
         gp, mesh.cell_type(), qpoints_rs, qweights
     );
 
-    // Compute Lagrange basis functions and their derivatives at quadrature points
     FEM2D::lagrange_basis(
         mesh.degree(),
         mesh.cell_type(),
@@ -898,36 +849,30 @@ Eigen::SparseMatrix<double> FEM2D::assemble_stiffness_z_matrix(
     qpoints_xz = Eigen::MatrixXd::Zero(qpoints_rs.rows(), 2);
     dphi_xz = Eigen::MatrixXd::Zero(2 * qpoints_rs.rows(), mesh.dofs_per_cell());
 
-    // Local element stiffness matrix
     Eigen::MatrixXd Az_block = Eigen::MatrixXd::Zero(
         mesh.dofs_per_cell(), mesh.dofs_per_cell()
     );
 
-    // Loop over all elements in the mesh
     for (int k = 0; k < mesh.cmat.rows(); k++) {
         element = mesh.cmat.row(k);
         node_coords_v = mesh.pmat(element, Eigen::all);
 
-        // Map quadrature points and basis functions to the reference element
-        FEM2D::map_to_reference_cell(
+        FEM2D::map_from_reference_cell(
             mesh.degree(), mesh.cell_type(), node_coords_v, qpoints_rs,
             phi_rs, dphi_rs, detJ_rs, qpoints_xz, dphi_xz
         );
 
-        // Compute local stiffness matrix contributions
         for (int q = 0; q < qpoints_rs.rows(); q++) {
-            int w = 2*q + 1;
+            int wz = 2*q + 1;
             double detJxW = fabs(detJ_rs(q)) * qweights(q);
+
             for (int i = 0; i < mesh.dofs_per_cell(); i++) {
                 for (int j = 0; j < mesh.dofs_per_cell(); j++) {
-                    Az_block(i, j) += (
-                        phi_rs(q, i) * dphi_xz(w, j)
-                    ) * detJxW;
+                    Az_block(i, j) += phi_rs(q, i)*dphi_xz(wz, j)*detJxW;
                 }
             }
         }
 
-        // Convert local matrix to sparse format and add to global stiffness matrix
         for (int i = 0; i < mesh.dofs_per_cell(); i++) {
             for (int j = 0; j < mesh.dofs_per_cell(); j++) {
                 mat_coeffs.push_back(Eigen::Triplet<double>(
@@ -940,91 +885,72 @@ Eigen::SparseMatrix<double> FEM2D::assemble_stiffness_z_matrix(
         Az_block.setZero(); // Reset local matrix for the next element
     }
 
-    // Construct sparse global stiffness matrix
     Az_sp_ret.setFromTriplets(mat_coeffs.begin(), mat_coeffs.end());
+
     return Az_sp_ret;
 }
 
-Eigen::MatrixXd FEM2D::assemble_expansion_matrix(
+Eigen::MatrixXd FEM2D::assemble_extension_matrix(
     StructuredMesh &mesh,
     std::function<double(double, double)> force,
     int gp
 ) {
     if (mesh.cell_type() != MESH2D::QUADRILATERAL)
-        throw std::invalid_argument("FEM2D::assemble_expansion_matrix: Unsupported cell type: Only QUADRILATERAL is supported.");
+        throw std::invalid_argument("FEM2D::assemble_extension_matrix: Unsupported cell type: Only QUADRILATERAL is supported.");
 
-    // Determine the horizontal extent of the mesh (Lx) based on the first column of mesh node coordinates
     double x0 = mesh.pmat.col(0).minCoeff();
     double x1 = mesh.pmat.col(0).maxCoeff();
-    double Lx = x1 - x0;  // Horizontal length of the mesh
+    double Lx = x1 - x0;
 
-    // Get the number of horizontal (nx) and vertical (nz) cells in the mesh
     int nx = mesh.nx();
     int nz = mesh.nz();
 
-    // Initialize the expansion matrix with zeroes; the size is (nof_dofs x (nx+1))
-    // `nof_dofs` is the number of degrees of freedom, and (nx+1) corresponds to the number of columns
-    Eigen::MatrixXd expan_mat = Eigen::MatrixXd::Zero(mesh.nof_dofs(), nx+1);
+    Eigen::MatrixXd extension_mat = Eigen::MatrixXd::Zero(mesh.nof_dofs(), nx+1);
 
-    // Define matrices and vectors for storing the quadrature points, basis functions, and their gradients
     Eigen::MatrixXd node_coords_v, qpoints_rs, qpoints_xz,
         phi_rs, dphi_rs, dphi_xz;
     Eigen::VectorXd qweights, detJ_rs;
     Eigen::VectorXi element_v;
 
-    // Retrieve quadrature points and weights in reference element
     FEM2D::gauss_legendre_quadrature(
         gp, mesh.cell_type(), qpoints_rs, qweights
     );
 
-    // Calculate the Lagrange basis functions and their gradients at the quadrature points
     FEM2D::lagrange_basis(
         mesh.degree(), mesh.cell_type(), qpoints_rs, phi_rs, dphi_rs
     );
 
-    // Initialize vectors and matrices for transformation and calculation of Jacobian
-    detJ_rs = Eigen::VectorXd::Zero(qpoints_rs.rows());  // Jacobian determinant
-    qpoints_xz = Eigen::MatrixXd::Zero(qpoints_rs.rows(), 2);  // Physical quadrature points
-    dphi_xz = Eigen::MatrixXd::Zero(2*qpoints_rs.rows(), mesh.dofs_per_cell());  // Gradient of phi in physical space
+    detJ_rs = Eigen::VectorXd::Zero(qpoints_rs.rows());
+    qpoints_xz = Eigen::MatrixXd::Zero(qpoints_rs.rows(), 2);
+    dphi_xz = Eigen::MatrixXd::Zero(2*qpoints_rs.rows(), mesh.dofs_per_cell());
 
-    // Iterate over the vertical layers (kr) and horizontal layers (kc) of the mesh
     int k = 0;
     for (int kr = 0; kr < nz; kr++) {
         for (int kc = 0; kc < nx; kc++) {
-            // Get the element (cell) corresponding to the current indices kr and kc
             element_v = mesh.cmat.row(k);
-
-            // Get the coordinates of the nodes for the current element
             node_coords_v = mesh.pmat(element_v, Eigen::all);
 
-            // Map the reference cell quadrature points to the physical space using the provided mesh node coordinates
-            FEM2D::map_to_reference_cell(
+            FEM2D::map_from_reference_cell(
                 mesh.degree(), mesh.cell_type(), node_coords_v, qpoints_rs,
                 phi_rs, dphi_rs, detJ_rs, qpoints_xz, dphi_xz
             );
 
-            // Loop over quadrature points in the current element
             for (int q = 0; q < qpoints_rs.rows(); q++) {
-                // Calculate the weighted force contribution at this quadrature point
                 double Wxf = force(
                     qpoints_xz(q, 0), qpoints_xz(q, 1)
-                ) * qweights(q) * Lx / (nx * nz);
-
-                // Get r-coordinate at the quadrature point (used in linear interpolation between layers)
+                )*qweights(q)*Lx/(nx*nz);
                 double r = qpoints_rs(q, 0);
 
-                // Loop through the degrees of freedom (DOFs) for the current element and update the expansion matrix
                 for (int i = 0; i < mesh.dofs_per_cell(); i++) {
-                    // Add the contributions of the basis functions to the corresponding entries in the expansion matrix
-                    // The first column corresponds to the left-hand part of the element, and the second column to the right
-                    expan_mat(element_v(i), kc) += phi_rs(q, i) * (1 - r) * Wxf;  // Contribution to left part of element
-                    expan_mat(element_v(i), kc + 1) += phi_rs(q, i) * r * Wxf;  // Contribution to right part of element
+                    extension_mat(element_v(i), kc) += phi_rs(q, i)*(1 - r)*Wxf;
+                    extension_mat(element_v(i), kc + 1) += phi_rs(q, i)*r * Wxf;
                 }
             }
             k++;
         }
     }
-    return expan_mat;
+
+    return extension_mat;
 }
 
 double FEM2D::inner(
