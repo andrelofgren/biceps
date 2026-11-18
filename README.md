@@ -107,7 +107,7 @@ The two main modules in this project are the pStokesProblem and the FreeSurfaceP
 
 ## C++
 
-Running this demo requires [Matplot++](https://matplotlib.org), a C++ plotting library with an [API](https://en.wikipedia.org/wiki/API) similar to the popular Python library [Matplotlib](https://matplotlib.org/). A tarball for Matplot++ is available from [here](https://github.com/alandefreitas/matplotplusplus/archive/refs/tags/v1.2.2.tar.gz). To install it, first extract it
+Running this demo requires [Matplot++](https://alandefreitas.github.io/matplotplusplus), a C++ plotting library with an [API](https://en.wikipedia.org/wiki/API) similar to the popular Python library [Matplotlib](https://matplotlib.org). A tarball for Matplot++ is available from [here](https://github.com/alandefreitas/matplotplusplus/archive/refs/tags/v1.2.2.tar.gz). To install it, first extract it
 
 ```console
 tar -xvzf v1.2.2.tar.gz && cd matplotplusplus-1.2.2
