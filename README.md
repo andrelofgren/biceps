@@ -32,7 +32,7 @@ tar -xvzf eigenpy-3.13.0.tar.gz && cd eigenpy-3.13.0
 Then configure and compile (on all available cores):
 
 ```console
-mkdir -p .build && cd .build && cmake .. -DCMAKE_BUILD_TYPE=release && make -j$(grep "core id" /proc/cpuinfo | sort | uniq | wc -l)
+mkdir -p .build && cd .build && cmake .. -DCMAKE_BUILD_TYPE=Release && make -j$(grep "core id" /proc/cpuinfo | sort | uniq | wc -l)
 ```
 
 Finally, to install run:
