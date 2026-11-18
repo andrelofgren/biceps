@@ -47,18 +47,18 @@ To build Biceps with Python enabled, configure CMake:
 cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_PYTHON=ON
 ```
 
-### Documentation
-
-Generating documentation requires [Doxygen](https://www.doxygen.nl/) and [Graphviz](https://graphviz.org/):
-
-```console
-sudo apt install doxygen graphviz
-```
-
-To build Biceps documentation, configure CMake:
-```console
-cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_DOCS=ON
-```
+<!-- ### Documentation -->
+<!---->
+<!-- Generating documentation requires [Doxygen](https://www.doxygen.nl/) and [Graphviz](https://graphviz.org/): -->
+<!---->
+<!-- ```console -->
+<!-- sudo apt install doxygen graphviz -->
+<!-- ``` -->
+<!---->
+<!-- To build Biceps documentation, configure CMake: -->
+<!-- ```console -->
+<!-- cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_DOCS=ON -->
+<!-- ``` -->
 
 ### Unit testing
 Unit testing is performed using the boost unit test module, which can be installed by running:
