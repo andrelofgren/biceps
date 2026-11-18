@@ -25,11 +25,11 @@ Eigen::VectorXd TimeIntegrator::step_explicit(double dt)
     FEMFunction2D ux_fem_func_p2 = psp.velocity_x();
     FEMFunction2D uz_fem_func_p2 = psp.velocity_z();
     h0_fem_func.vals =
-        ux_fem_func_p2.extract_vertex_subvec(MESH2D::SURFACE_ID)(Eigen::all, 1);
+        ux_fem_func_p2.extract_vertex_subvec(MESH2D::SURFACE_ID)(Eigen::placeholders::all, 1);
     ux_fem_func.vals =
-        ux_fem_func_p2.extract_dof_subvec(MESH2D::SURFACE_ID)(Eigen::all, 2);
+        ux_fem_func_p2.extract_dof_subvec(MESH2D::SURFACE_ID)(Eigen::placeholders::all, 2);
     uz_fem_func.vals =
-        uz_fem_func_p2.extract_dof_subvec(MESH2D::SURFACE_ID)(Eigen::all, 2);
+        uz_fem_func_p2.extract_dof_subvec(MESH2D::SURFACE_ID)(Eigen::placeholders::all, 2);
 
     // Assemble the free-surface problem
     fsp.assemble_lhs_explicit();
@@ -65,11 +65,11 @@ Eigen::VectorXd TimeIntegrator::step_simplicit(double dt)
     FEMFunction2D ux_fem_func_p2 = psp.velocity_x();
     FEMFunction2D uz_fem_func_p2 = psp.velocity_z();
     h0_fem_func.vals =
-        ux_fem_func_p2.extract_vertex_subvec(MESH2D::SURFACE_ID)(Eigen::all, 1);
+        ux_fem_func_p2.extract_vertex_subvec(MESH2D::SURFACE_ID)(Eigen::placeholders::all, 1);
     ux_fem_func.vals =
-        ux_fem_func_p2.extract_dof_subvec(MESH2D::SURFACE_ID)(Eigen::all, 2);
+        ux_fem_func_p2.extract_dof_subvec(MESH2D::SURFACE_ID)(Eigen::placeholders::all, 2);
     uz_fem_func.vals =
-        uz_fem_func_p2.extract_dof_subvec(MESH2D::SURFACE_ID)(Eigen::all, 2);
+        uz_fem_func_p2.extract_dof_subvec(MESH2D::SURFACE_ID)(Eigen::placeholders::all, 2);
 
     // Assemble the free-surface problem
     fsp.assemble_lhs_simplicit(ux_fem_func, dt);

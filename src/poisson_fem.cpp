@@ -70,10 +70,10 @@ void PoissonProblem::assemble_stiffness_block(
     // Loop over elements to assemble the stiffness matrix
     for (int k = 0; k < mesh.cmat.rows(); k++) {
         element = mesh.cmat.row(k);
-        node_coords_v = mesh.pmat(element, Eigen::all);
+        node_coords_v = mesh.pmat(element, Eigen::placeholders::all);
 
         // Map to reference cell and compute the stiffness block for the element
-        FEM2D::map_to_reference_cell(
+        FEM2D::map_from_reference_cell(
             mesh.degree(), mesh.cell_type(), node_coords_v, qpoints_rs,
             phi_rs, dphi_rs, detJ_rs, qpoints_xz, dphi_xz
         );
@@ -140,10 +140,10 @@ void PoissonProblem::assemble_mass_block(
     // Loop over elements to assemble the mass matrix
     for (int k = 0; k < mesh.cmat.rows(); k++) {
         element = mesh.cmat.row(k);
-        node_coords_v = mesh.pmat(element, Eigen::all);
+        node_coords_v = mesh.pmat(element, Eigen::placeholders::all);
 
         // Map to reference cell and compute the mass block for the element
-        FEM2D::map_to_reference_cell(
+        FEM2D::map_from_reference_cell(
             mesh.degree(), mesh.cell_type(), node_coords_v, qpoints_rs,
             phi_rs, dphi_rs, detJ_rs, qpoints_xz, dphi_xz
         );
@@ -207,11 +207,11 @@ void PoissonProblem::assemble_robin_block(
     std::vector<int> surf_edge_inds = mesh.extract_edge_inds(boundary_id);
     for (int si: surf_edge_inds) {
         // Get the indices of nodes forming the edge
-        edge_vi = mesh.emat(si, Eigen::all);
-        node_coords = mesh.pmat(edge_vi, Eigen::all);
+        edge_vi = mesh.emat(si, Eigen::placeholders::all);
+        node_coords = mesh.pmat(edge_vi, Eigen::placeholders::all);
 
         // Map the node coordinates to the reference cell
-        FEM1D::map_to_reference_cell(
+        FEM1D::map_from_reference_cell(
             mesh.degree(), node_coords, qpoints_r,
             phi_r, dphi_r, detJ_r, qpoints_x, dphi_x
         );
@@ -276,11 +276,11 @@ void PoissonProblem::assemble_neumann_rhs(
     std::vector<int> surf_edge_inds = mesh.extract_edge_inds(boundary_id);
     for (int si: surf_edge_inds) {
         // Get the indices of nodes forming the edge
-        edge_vi = mesh.emat(si, Eigen::all);
-        node_coords = mesh.pmat(edge_vi, Eigen::all);
+        edge_vi = mesh.emat(si, Eigen::placeholders::all);
+        node_coords = mesh.pmat(edge_vi, Eigen::placeholders::all);
 
         // Map the node coordinates to the reference cell
-        FEM1D::map_to_reference_cell(
+        FEM1D::map_from_reference_cell(
             mesh.degree(), node_coords, qpoints_r,
             phi_r, dphi_r, detJ_r, qpoints_x, dphi_x
         );
@@ -329,10 +329,10 @@ void PoissonProblem::assemble_force_rhs(
     for (int k = 0; k < mesh.cmat.rows(); k++) {
         // Retrieve element indices for the current element
         element = mesh.cmat.row(k);
-        node_coords_v = mesh.pmat(element, Eigen::all);
+        node_coords_v = mesh.pmat(element, Eigen::placeholders::all);
 
         // Map the node coordinates to the reference cell
-        FEM2D::map_to_reference_cell(
+        FEM2D::map_from_reference_cell(
             mesh.degree(), mesh.cell_type(), node_coords_v, qpoints_rs,
             phi_rs, dphi_rs, detJ_rs, qpoints_xz, dphi_xz
         );
@@ -380,10 +380,10 @@ void PoissonProblem::assemble_force_rhs(
     for (int k = 0; k < mesh.cmat.rows(); k++) {
         // Retrieve element indices for the current element
         element = mesh.cmat.row(k);
-        node_coords_v = mesh.pmat(element, Eigen::all);
+        node_coords_v = mesh.pmat(element, Eigen::placeholders::all);
 
         // Map the node coordinates to the reference cell
-        FEM2D::map_to_reference_cell(
+        FEM2D::map_from_reference_cell(
             mesh.degree(), mesh.cell_type(), node_coords_v, qpoints_rs,
             phi_rs, dphi_rs, detJ_rs, qpoints_xz, dphi_xz
         );
@@ -395,7 +395,7 @@ void PoissonProblem::assemble_force_rhs(
         for (int q = 0; q < qpoints_rs.rows(); q++) {
             // Compute the weighted value of the force function f at the quadrature point
             double detJxWxf = (
-                f_cell.dot(phi_rs(q, Eigen::all)) * fabs(detJ_rs(q)) * qweights(q)
+                f_cell.dot(phi_rs(q, Eigen::placeholders::all)) * fabs(detJ_rs(q)) * qweights(q)
             );
 
             // Add contribution to the right-hand side vector (rhs_vec) using the basis functions
@@ -436,11 +436,11 @@ void PoissonProblem::assemble_robin_rhs(
     // Loop over the edges of the specified boundary
     for (int si: surf_edge_inds) {
         // Retrieve the vertex indices for the current edge
-        edge_vi = mesh.emat(si, Eigen::all);
-        node_coords = mesh.pmat(edge_vi, Eigen::all);
+        edge_vi = mesh.emat(si, Eigen::placeholders::all);
+        node_coords = mesh.pmat(edge_vi, Eigen::placeholders::all);
 
         // Map the node coordinates of the edge to the reference cell
-        FEM1D::map_to_reference_cell(
+        FEM1D::map_from_reference_cell(
             mesh.degree(), node_coords, qpoints_r,
             phi_r, dphi_r, detJ_r, qpoints_x, dphi_x
         );

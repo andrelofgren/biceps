@@ -21,7 +21,7 @@
 #include <fem_2d.hpp>
 #include <enums.hpp>
 
-void FEM2D::map_to_reference_cell(
+void FEM2D::map_from_reference_cell(
     int degree, 
     int cell_type,
     const Eigen::MatrixXd &node_coords,
@@ -36,18 +36,18 @@ void FEM2D::map_to_reference_cell(
     for (int i = 0; i < qpoints_rs.rows(); i++) {
         int j = 2*i;
 
-        dF = grad_phi_rs(Eigen::seq(j, j+1), Eigen::all)*node_coords;
+        dF = grad_phi_rs(Eigen::seq(j, j+1), Eigen::placeholders::all)*node_coords;
         detJ_rs_ret(i) = dF(0, 0)*dF(1, 1) - dF(0, 1)*dF(1, 0);
-        qpoints_xz_ret(i, Eigen::all) = phi_rs(i, Eigen::all)*node_coords;
-        grad_phi_xz_ret(j, Eigen::all) = (
-            dF(1, 1)*grad_phi_rs(j, Eigen::all)
-            -dF(0, 1)*grad_phi_rs(j+1, Eigen::all)
+        qpoints_xz_ret(i, Eigen::placeholders::all) = phi_rs(i, Eigen::placeholders::all)*node_coords;
+        grad_phi_xz_ret(j, Eigen::placeholders::all) = (
+            dF(1, 1)*grad_phi_rs(j, Eigen::placeholders::all)
+            -dF(0, 1)*grad_phi_rs(j+1, Eigen::placeholders::all)
         );
-        grad_phi_xz_ret(j+1, Eigen::all) = (
-            dF(0, 0)*grad_phi_rs(j+1, Eigen::all) 
-            -dF(1, 0)*grad_phi_rs(j, Eigen::all)
+        grad_phi_xz_ret(j+1, Eigen::placeholders::all) = (
+            dF(0, 0)*grad_phi_rs(j+1, Eigen::placeholders::all) 
+            -dF(1, 0)*grad_phi_rs(j, Eigen::placeholders::all)
         );
-        grad_phi_xz_ret(Eigen::seq(j, j+1), Eigen::all) *= 1.0/detJ_rs_ret(i);
+        grad_phi_xz_ret(Eigen::seq(j, j+1), Eigen::placeholders::all) *= 1.0/detJ_rs_ret(i);
     }
 }
 
@@ -192,7 +192,7 @@ Eigen::MatrixXd FEM2D::reference_element_points_rs(
         cell_type = MESH2D::TRIANGLE_RIGHT;
 
     StructuredMesh mesh(1, 1, degree, cell_type);
-    Eigen::MatrixXd ref_coords = mesh.pmat(mesh.cmat.row(0), Eigen::all);
+    Eigen::MatrixXd ref_coords = mesh.pmat(mesh.cmat.row(0), Eigen::placeholders::all);
     return ref_coords;
 }
 
@@ -500,7 +500,7 @@ Eigen::SparseMatrix<double> FEM2D::assemble_mass_matrix(
 
     for (int k = 0; k < mesh.cmat.rows(); k++) {
         element = mesh.cmat.row(k);
-        node_coords = mesh.pmat(element, Eigen::all);
+        node_coords = mesh.pmat(element, Eigen::placeholders::all);
 
         FEM2D::map_from_reference_cell(
             mesh.degree(), mesh.cell_type(), node_coords, qpoints_rs,
@@ -570,7 +570,7 @@ Eigen::SparseMatrix<double> FEM2D::assemble_stiffness_matrix(
 
     for (int k = 0; k < mesh.cmat.rows(); k++) {
         element = mesh.cmat.row(k);
-        node_coords_v = mesh.pmat(element, Eigen::all);
+        node_coords_v = mesh.pmat(element, Eigen::placeholders::all);
 
         FEM2D::map_from_reference_cell(
             mesh.degree(), mesh.cell_type(), node_coords_v, qpoints_rs,
@@ -643,7 +643,7 @@ Eigen::SparseMatrix<double> FEM2D::assemble_stiffness_xx_matrix(
 
     for (int k = 0; k < mesh.cmat.rows(); k++) {
         element = mesh.cmat.row(k);
-        node_coords_v = mesh.pmat(element, Eigen::all);
+        node_coords_v = mesh.pmat(element, Eigen::placeholders::all);
 
         FEM2D::map_from_reference_cell(
             mesh.degree(), mesh.cell_type(), node_coords_v, qpoints_rs,
@@ -713,7 +713,7 @@ Eigen::SparseMatrix<double> FEM2D::assemble_stiffness_zz_matrix(
 
     for (int k = 0; k < mesh.cmat.rows(); k++) {
         element = mesh.cmat.row(k);
-        node_coords_v = mesh.pmat(element, Eigen::all);
+        node_coords_v = mesh.pmat(element, Eigen::placeholders::all);
 
         FEM2D::map_from_reference_cell(
             mesh.degree(), mesh.cell_type(), node_coords_v, qpoints_rs,
@@ -784,7 +784,7 @@ Eigen::SparseMatrix<double> FEM2D::assemble_stiffness_x_matrix(
 
     for (int k = 0; k < mesh.cmat.rows(); k++) {
         element = mesh.cmat.row(k);
-        node_coords_v = mesh.pmat(element, Eigen::all);
+        node_coords_v = mesh.pmat(element, Eigen::placeholders::all);
 
         FEM2D::map_from_reference_cell(
             mesh.degree(), mesh.cell_type(), node_coords_v, qpoints_rs,
@@ -855,7 +855,7 @@ Eigen::SparseMatrix<double> FEM2D::assemble_stiffness_z_matrix(
 
     for (int k = 0; k < mesh.cmat.rows(); k++) {
         element = mesh.cmat.row(k);
-        node_coords_v = mesh.pmat(element, Eigen::all);
+        node_coords_v = mesh.pmat(element, Eigen::placeholders::all);
 
         FEM2D::map_from_reference_cell(
             mesh.degree(), mesh.cell_type(), node_coords_v, qpoints_rs,
@@ -928,7 +928,7 @@ Eigen::MatrixXd FEM2D::assemble_extension_matrix(
     for (int kr = 0; kr < nz; kr++) {
         for (int kc = 0; kc < nx; kc++) {
             element_v = mesh.cmat.row(k);
-            node_coords_v = mesh.pmat(element_v, Eigen::all);
+            node_coords_v = mesh.pmat(element_v, Eigen::placeholders::all);
 
             FEM2D::map_from_reference_cell(
                 mesh.degree(), mesh.cell_type(), node_coords_v, qpoints_rs,

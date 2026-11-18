@@ -144,7 +144,7 @@ BOOST_AUTO_TEST_CASE(test_mesh_extract_cell_inds)
     int nz = 3;
     StructuredMesh mesh(nx, nz, 1, QUADRILATERAL);
     std::vector<int> cinds = mesh.extract_cell_inds(NORTH_WEST_ID | NORTH_ID | NORTH_EAST_ID);
-    Eigen::MatrixXi cmat_3x3_quad_p1 = mesh.cmat(cinds, Eigen::all);
+    Eigen::MatrixXi cmat_3x3_quad_p1 = mesh.cmat(cinds, Eigen::placeholders::all);
 
     Eigen::ArrayXXi cmat_adiff_p1 = (cmat_3x3_quad_p1 - cmat_3x3_quad_p1_ref).array().abs();
     BOOST_REQUIRE_EQUAL(cmat_3x3_quad_p1.rows(), cmat_3x3_quad_p1_ref.rows());

@@ -61,7 +61,7 @@ void FEMFunction1D::assign(const Eigen::VectorXd &vec)
 
 Eigen::VectorXd FEMFunction1D::eval_cell(int ci)
 {
-    return vals(mesh.cmat.row(ci), Eigen::all);
+    return vals(mesh.cmat.row(ci), Eigen::placeholders::all);
 }
 
 double FEMFunction1D::integrate(int gp) {
@@ -83,9 +83,9 @@ double FEMFunction1D::integrate(int gp) {
 
     double integral_sum = 0.0;
     for (int ci = 0; ci < mesh.nof_cells(); ci++) {
-        element = mesh.cmat(ci, Eigen::all);
-        node_coords = mesh.pmat(element, Eigen::all);
-        FEM1D::map_to_reference_cell(
+        element = mesh.cmat(ci, Eigen::placeholders::all);
+        node_coords = mesh.pmat(element, Eigen::placeholders::all);
+        FEM1D::map_from_reference_cell(
             mesh.degree(), node_coords, qpoints_r,
             phi_r, dphi_r, detJ_r, qpoints_x, dphi_x
         );
@@ -102,8 +102,8 @@ Eigen::MatrixXd FEMFunction1D::extract_vertex_subvec(int domain_id)
 {
     std::vector<int> subdomain_inds = mesh.extract_vertex_dof_inds(domain_id);
     Eigen::MatrixXd vector_xzf(subdomain_inds.size(), 3);
-    vector_xzf(Eigen::all, Eigen::seq(0, 1)) = mesh.pmat(subdomain_inds, Eigen::all);
-    vector_xzf(Eigen::all, 2) = vals(subdomain_inds);
+    vector_xzf(Eigen::placeholders::all, Eigen::seq(0, 1)) = mesh.pmat(subdomain_inds, Eigen::placeholders::all);
+    vector_xzf(Eigen::placeholders::all, 2) = vals(subdomain_inds);
     return vector_xzf;
 }
 
@@ -111,8 +111,8 @@ Eigen::MatrixXd FEMFunction1D::extract_dof_subvec(int domain_id)
 {
     std::vector<int> subdomain_inds = mesh.extract_dof_inds(domain_id);
     Eigen::MatrixXd vector_xzf(subdomain_inds.size(), 3);
-    vector_xzf(Eigen::all, Eigen::seq(0, 1)) = mesh.pmat(subdomain_inds, Eigen::all);
-    vector_xzf(Eigen::all, 2) = vals(subdomain_inds);
+    vector_xzf(Eigen::placeholders::all, Eigen::seq(0, 1)) = mesh.pmat(subdomain_inds, Eigen::placeholders::all);
+    vector_xzf(Eigen::placeholders::all, 2) = vals(subdomain_inds);
     return vector_xzf;
 }
 

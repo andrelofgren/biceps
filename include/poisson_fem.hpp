@@ -21,8 +21,9 @@
 
 #include <vector>
 #include <functional>
-#include <fem_function_2d.hpp>
 #include <Eigen/Sparse>
+
+#include <fem_function_2d.hpp>
 
 class PoissonProblem {
 

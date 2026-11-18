@@ -23,7 +23,6 @@
 #include <boost/format.hpp>
 #include <cmath>
 
-// Nonlinear viscosity function
 static inline double glen_flow_viscosity(
     double A, double n_i, double eps_reg_2, double eff_strain_rate_2
 ) {
@@ -42,9 +41,9 @@ pStokesProblem::pStokesProblem(
     force_x(force_x), force_z(force_z), u_mesh(u_mesh), p_mesh(p_mesh),
     logger(INFO, std::cout)
 {
-    nv_dofs = u_mesh.nof_dofs();  // Number of velocity dofs
-    np_dofs = p_mesh.nof_dofs();  // Number of pressure dofs
-    n_dofs = 2*nv_dofs + np_dofs;  // Total number of dofs (velocity + pressure)
+    nv_dofs = u_mesh.nof_dofs();
+    np_dofs = p_mesh.nof_dofs();
+    n_dofs = 2*nv_dofs + np_dofs;
 
     ux_v2d = Eigen::VectorXi::Zero(nv_dofs);
     uz_v2d = Eigen::VectorXi::Zero(nv_dofs);
@@ -81,7 +80,6 @@ pStokesProblem::pStokesProblem(
     rhs_vec = Eigen::VectorXd::Zero(n_dofs);
     w_vec = Eigen::VectorXd::Zero(n_dofs);
 
-    // Estimate the maximum number of non-zero entries
     int u_nnz_per_dof = 2*(2*u_mesh.degree() + 1)*(2*u_mesh.degree() + 1);
     int p_nnz_per_dof = (2*p_mesh.degree() + 1)*(2*p_mesh.degree() + 1);
     int nnz_per_dof = u_nnz_per_dof + p_nnz_per_dof;
@@ -127,7 +125,7 @@ void pStokesProblem::assemble_stress_block()
 
     for (int k = 0; k < u_mesh.cmat.rows(); ++k) {
         element_u = u_mesh.cmat.row(k);
-        node_coords_u = u_mesh.pmat(element_u, Eigen::all);
+        node_coords_u = u_mesh.pmat(element_u, Eigen::placeholders::all);
 
         FEM2D::map_from_reference_cell(
             u_mesh.degree(), u_mesh.cell_type(), node_coords_u, qpoints_rs,
@@ -137,28 +135,24 @@ void pStokesProblem::assemble_stress_block()
         Eigen::VectorXd ux_vec = w_vec(ux_v2d(element_u));
         Eigen::VectorXd uz_vec = w_vec(uz_v2d(element_u));
 
-        Eigen::MatrixXd Sx = dphi_xz(Eigen::seq(0, Eigen::last, 2), Eigen::all);
-        Eigen::MatrixXd Sz = dphi_xz(Eigen::seq(1, Eigen::last, 2), Eigen::all);
+        Eigen::MatrixXd Sx = dphi_xz(Eigen::seq(0, Eigen::placeholders::last, 2), Eigen::placeholders::all);
+        Eigen::MatrixXd Sz = dphi_xz(Eigen::seq(1, Eigen::placeholders::last, 2), Eigen::placeholders::all);
 
-        // Compute the gradients of the velocity components
         Eigen::VectorXd ddx_ux = Sx*ux_vec;
         Eigen::VectorXd ddz_ux = Sz*ux_vec;
         Eigen::VectorXd ddx_uz = Sx*uz_vec;
         Eigen::VectorXd ddz_uz = Sz*uz_vec;
 
-        // Loop over quadrature points
         for (int q = 0; q < qpoints_rs.rows(); ++q) {
-            int wx = 2*q;  // Index of x-derivative
-            int wz = wx + 1;  // Index of z-derivative
+            int wx = 2*q;
+            int wz = wx + 1;
 
-            // Compute the effective strain rate based on the velocity gradients
             double eff_strain_rate_2 = 0.5*(
                 pow(ddx_ux(q), 2)
                 + 0.5*pow(ddz_ux(q) + ddx_uz(q), 2)
                 + pow(ddz_uz(q), 2)
             );
 
-            // Glen's flow law rheology to compute viscosity
             double eta = glen_flow_viscosity(
                 rate_factor, glen_exponent, eps_reg_2, eff_strain_rate_2
             );
@@ -248,8 +242,8 @@ void pStokesProblem::assemble_incomp_block()
         element_u = u_mesh.cmat.row(k);
         element_p = p_mesh.cmat.row(k);
 
-        node_coords_u = u_mesh.pmat(element_u, Eigen::all);
-        node_coords_p = p_mesh.pmat(element_p, Eigen::all);
+        node_coords_u = u_mesh.pmat(element_u, Eigen::placeholders::all);
+        node_coords_p = p_mesh.pmat(element_p, Eigen::placeholders::all);
 
         FEM2D::map_from_reference_cell(
             p_mesh.degree(), p_mesh.cell_type(), node_coords_p, qpoints_rs,
@@ -301,7 +295,6 @@ void pStokesProblem::assemble_incomp_block()
             }
         }
 
-        // Reset blocks
         B_px.setZero();
         B_pz.setZero();
         B_xp.setZero();
@@ -338,10 +331,10 @@ void pStokesProblem::assemble_fssa_vertical_block() {
     std::vector<int> surf_edge_inds = u_mesh.extract_edge_inds(MESH2D::SURFACE_ID);
 
     for (int si : surf_edge_inds) {
-        edge_vi = u_mesh.emat(si, Eigen::all);
-        node_coords = u_mesh.pmat(edge_vi, Eigen::all);
+        edge_vi = u_mesh.emat(si, Eigen::placeholders::all);
+        node_coords = u_mesh.pmat(edge_vi, Eigen::placeholders::all);
 
-        FEM1D::map_to_reference_cell(
+        FEM1D::map_from_reference_cell(
             u_mesh.degree(), node_coords, qpoints_r,
             phi_r, dphi_r, detJ_r, qpoints_x, dphi_x
         );
@@ -417,10 +410,10 @@ void pStokesProblem::assemble_fssa_normal_block() {
     std::vector<int> surf_edge_inds = u_mesh.extract_edge_inds(MESH2D::SURFACE_ID);
 
     for (int si : surf_edge_inds) {
-        edge_vi = u_mesh.emat(si, Eigen::all);
-        node_coords_u = u_mesh.pmat(edge_vi, Eigen::all);
+        edge_vi = u_mesh.emat(si, Eigen::placeholders::all);
+        node_coords_u = u_mesh.pmat(edge_vi, Eigen::placeholders::all);
 
-        FEM1D::map_to_reference_cell(
+        FEM1D::map_from_reference_cell(
             u_mesh.degree(), node_coords_u, qpoints_r,
             phi_r, dphi_r, detJ_r, qpoints_x, dphi_x
         );
@@ -495,10 +488,10 @@ void pStokesProblem::assemble_fssa_vertical_rhs() {
     std::vector<int> surf_edge_inds = u_mesh.extract_edge_inds(MESH2D::SURFACE_ID);
 
     for (int si : surf_edge_inds) {
-        edge_vi = u_mesh.emat(si, Eigen::all);
-        node_coords_u = u_mesh.pmat(edge_vi, Eigen::all);
+        edge_vi = u_mesh.emat(si, Eigen::placeholders::all);
+        node_coords_u = u_mesh.pmat(edge_vi, Eigen::placeholders::all);
 
-        FEM1D::map_to_reference_cell(
+        FEM1D::map_from_reference_cell(
             u_mesh.degree(), node_coords_u, qpoints_r,
             phi_r, dphi_r, detJ_r, qpoints_x, dphi_x
         );
@@ -541,9 +534,9 @@ void pStokesProblem::assemble_rhs_vec()
 
     for (int k = 0; k < u_mesh.cmat.rows(); k++) {
         element_u = u_mesh.cmat.row(k);
-        node_coords_u = u_mesh.pmat(element_u, Eigen::all);
+        node_coords_u = u_mesh.pmat(element_u, Eigen::placeholders::all);
 
-        FEM2D::map_to_reference_cell(
+        FEM2D::map_from_reference_cell(
             u_mesh.degree(), u_mesh.cell_type(), node_coords_u, qpoints_rs,
             phi_rs, dphi_rs, detJ_rs, qpoints_xz, dphi_xz
         );
@@ -571,28 +564,23 @@ void pStokesProblem::commit_lhs_mat()
 
 void pStokesProblem::apply_zero_dirichlet_bc()
 {
-    // Loop over all nnz elements and set off-diagonals corresponding to boundary nodes to zero
     for (int col = 0; col < lhs_mat.outerSize(); ++col)
-        // Check if the column corresponds to a boundary node for either ux or uz
         if (
             ux_d2v(col) != -1 && u_mesh.dimat(ux_d2v(col)) & ux_dirichlet_bc_mask ||
             uz_d2v(col) != -1 && u_mesh.dimat(uz_d2v(col)) & uz_dirichlet_bc_mask 
         ) {
-            // Eliminate column
             for (Eigen::SparseMatrix<double>::InnerIterator it(lhs_mat, col); it; ++it) {
                 it.valueRef() = 0.0;
             }
             lhs_mat.coeffRef(col, col) = 1.0;
-            rhs_vec(col) = 0.0; // Zero Dirichlet bc
+            rhs_vec(col) = 0.0;
         } else {
             for (Eigen::SparseMatrix<double>::InnerIterator it(lhs_mat, col); it; ++it) {
                 int row = it.row();
-                // Check if the row corresponds to a boundary node for either ux or uz
                 if (
                     ux_d2v(row) != -1 && u_mesh.dimat(ux_d2v(row)) & ux_dirichlet_bc_mask ||
                     uz_d2v(row) != -1 && u_mesh.dimat(uz_d2v(row)) & uz_dirichlet_bc_mask
                 ) {
-                    // Eliminate row
                     it.valueRef() = 0.0;
                 }
             }
@@ -605,7 +593,6 @@ void pStokesProblem::apply_dirichlet_bc(
     const int velocity_component,
     std::function<double(double, double)> ub_func
 ) {
-    // Loop over all nnz elements and set off-diagonals corresponding to boundary nodes to zero
     int *outer_end = lhs_mat.outerIndexPtr() + lhs_mat.rows();
     int col = 0;
     for (
@@ -632,7 +619,6 @@ void pStokesProblem::apply_dirichlet_bc(
         col++;
     }
 
-    // Loop over all nnz elements and set diagonals corresponding to boundary nodes to one
     col = 0;
     for (
         int *outer_p = lhs_mat.outerIndexPtr();
@@ -644,7 +630,7 @@ void pStokesProblem::apply_dirichlet_bc(
                 double x = u_mesh.pmat(ux_d2v(col), 0);
                 double z = u_mesh.pmat(ux_d2v(col), 1);
                 lhs_mat.coeffRef(col, col) = 1.0;
-                rhs_vec(col) = ub_func(x, z);  // Dirichlet bc
+                rhs_vec(col) = ub_func(x, z);
             }
         }
         else if (velocity_component == VERTICAL && uz_d2v(col) != -1) {
@@ -652,7 +638,7 @@ void pStokesProblem::apply_dirichlet_bc(
                 double x = u_mesh.pmat(uz_d2v(col), 0);
                 double z = u_mesh.pmat(uz_d2v(col), 1);
                 lhs_mat.coeffRef(col, col) = 1.0;
-                rhs_vec(col) = ub_func(x, z);  // Dirichlet bc
+                rhs_vec(col) = ub_func(x, z);
             }
         }
         col++;
@@ -675,16 +661,13 @@ void pStokesProblem::solve_linear_system()
 
 void pStokesProblem::solve_nonlinear_system()
 {
-    // Assemble incompressibility block
     assemble_incomp_block();
 
-    // Assemble FSSA block according to fssa version
     if (fssa_version == FSSA_VERTICAL)
         assemble_fssa_vertical_block();
     else if (fssa_version == FSSA_NORMAL)
         assemble_fssa_normal_block();
 
-    // Assemble the right-hand side vector
     assemble_rhs_vec();
     int nof_pushed_elements_before_stress_assembly = nof_pushed_elements;
 
@@ -696,29 +679,23 @@ void pStokesProblem::solve_nonlinear_system()
     FEMFunction2D ex_func(u_mesh);
     FEMFunction2D ez_func(u_mesh);
 
-    // Assemble the mass matrix for calculating the L2 error
     Eigen::SparseMatrix<double> M = FEM2D::assemble_mass_matrix(u_mesh, u_mesh.degree() + 1);
     ux_new_func.set_mass_matrix(M);
     uz_new_func.set_mass_matrix(M);
     ex_func.set_mass_matrix(M);
     ez_func.set_mass_matrix(M);
 
-    // Picard iteration loop
     int ip = 0;
     do {
-        // Only need to reassemble stress block between iterations
         lhs_coeffs.resize(nof_pushed_elements_before_stress_assembly);
         nof_pushed_elements = nof_pushed_elements_before_stress_assembly;
 
-        // Assemble stress block and commit
         assemble_stress_block();
         commit_lhs_mat();
 
-        // Apply homogenous Dirichlet BC and solve linear system
         apply_zero_dirichlet_bc();
         solve_linear_system();
 
-        // Compute the step error and check convergence
         ux_new_func.vals = w_vec(ux_v2d);
         uz_new_func.vals = w_vec(uz_v2d);
         ex_func.vals = ux_new_func.vals - ux_old_func.vals;
@@ -729,16 +706,13 @@ void pStokesProblem::solve_nonlinear_system()
         double ez = ez_func.L2_norm();
         error_step = sqrt((ex*ex + ez*ez)/(ux*ux + uz*uz));
 
-        // Log iteration information
         logger.log_msg((boost::format{"<pStokes> Picard iteration %d: r(step) = %g"} %(ip+1) %error_step).str(), TRACE);
 
-        // Update old functions for the next iteration
         ux_old_func.assign(ux_new_func);
         uz_old_func.assign(uz_new_func);
         ++ip;
     } while (error_step > picard_stol && ip < picard_max_iter);
 
-    // Log summary after solving
     logger.log_msg("-------------------------------------", INFO);
     logger.log_msg("********** pStokes Summary **********", INFO);
     logger.log_msg("-------------------------------------", INFO);

@@ -28,7 +28,7 @@ FreeSurfaceProblem::FreeSurfaceProblem(
         h_mesh.nof_dofs(), h_mesh.nof_dofs()
     );
     rhs_vec = Eigen::VectorXd::Zero(h_mesh.nof_dofs());
-    zs_vec = h_mesh.pmat(Eigen::all, 1);
+    zs_vec = h_mesh.pmat(Eigen::placeholders::all, 1);
     lhs_coeffs.reserve((2*h_mesh.degree()+1)*h_mesh.nof_dofs());
 }
 
@@ -61,9 +61,9 @@ void FreeSurfaceProblem::assemble_lhs_explicit()
 
     // Loop over cells and compute the contribution to the LHS matrix.
     for (int ci = 0; ci < h_mesh.nof_cells(); ++ci) {
-        element = h_mesh.cmat(ci, Eigen::all);
-        node_coords = h_mesh.pmat(element, Eigen::all);
-        FEM1D::map_to_reference_cell(
+        element = h_mesh.cmat(ci, Eigen::placeholders::all);
+        node_coords = h_mesh.pmat(element, Eigen::placeholders::all);
+        FEM1D::map_from_reference_cell(
             h_mesh.degree(), node_coords, qpoints_r,
             phi_r, dphi_r, detJ_r, qpoints_x, dphi_x
         );
@@ -130,15 +130,15 @@ void FreeSurfaceProblem::assemble_rhs_explicit(
 
     // Loop over cells to compute the contribution to the RHS vector.
     for (int ci = 0; ci < h_mesh.nof_cells(); ++ci) {
-        element_h = h_mesh.cmat(ci, Eigen::all);
-        element_u = u_mesh.cmat(ci, Eigen::all);
-        node_coords_h = h_mesh.pmat(element_h, Eigen::all);
-        node_coords_u = u_mesh.pmat(element_u, Eigen::all);
-        FEM1D::map_to_reference_cell(
+        element_h = h_mesh.cmat(ci, Eigen::placeholders::all);
+        element_u = u_mesh.cmat(ci, Eigen::placeholders::all);
+        node_coords_h = h_mesh.pmat(element_h, Eigen::placeholders::all);
+        node_coords_u = u_mesh.pmat(element_u, Eigen::placeholders::all);
+        FEM1D::map_from_reference_cell(
             u_mesh.degree(), node_coords_u, qpoints_r,
             u_phi_r, u_dphi_r, detJ_r, qpoints_x, u_dphi_x
         );
-        FEM1D::map_to_reference_cell(
+        FEM1D::map_from_reference_cell(
             h_mesh.degree(), node_coords_h, qpoints_r,
             h_phi_r, h_dphi_r, detJ_r, qpoints_x, h_dphi_x
         );
@@ -199,15 +199,15 @@ void FreeSurfaceProblem::assemble_lhs_simplicit(
 
     // Loop over cells to compute the implicit contribution to the LHS matrix.
     for (int ci = 0; ci < h_mesh.nof_cells(); ++ci) {
-        element_h = h_mesh.cmat(ci, Eigen::all);
-        element_u = u_mesh.cmat(ci, Eigen::all);
-        node_coords_h = h_mesh.pmat(element_h, Eigen::all);
-        node_coords_u = u_mesh.pmat(element_u, Eigen::all);
-        FEM1D::map_to_reference_cell(
+        element_h = h_mesh.cmat(ci, Eigen::placeholders::all);
+        element_u = u_mesh.cmat(ci, Eigen::placeholders::all);
+        node_coords_h = h_mesh.pmat(element_h, Eigen::placeholders::all);
+        node_coords_u = u_mesh.pmat(element_u, Eigen::placeholders::all);
+        FEM1D::map_from_reference_cell(
             u_mesh.degree(), node_coords_u, qpoints_r,
             u_phi_r, u_dphi_r, detJ_r, qpoints_x, u_dphi_x
         );
-        FEM1D::map_to_reference_cell(
+        FEM1D::map_from_reference_cell(
             h_mesh.degree(), node_coords_h, qpoints_r,
             h_phi_r, h_dphi_r, detJ_r, qpoints_x, h_dphi_x
         );
@@ -278,15 +278,15 @@ void FreeSurfaceProblem::assemble_rhs_simplicit(
 
     // Loop over cells to compute the implicit contribution to the RHS vector.
     for (int ci = 0; ci < h_mesh.nof_cells(); ++ci) {
-        element_h = h_mesh.cmat(ci, Eigen::all);
-        element_u = u_mesh.cmat(ci, Eigen::all);
-        node_coords_h = h_mesh.pmat(element_h, Eigen::all);
-        node_coords_u = u_mesh.pmat(element_u, Eigen::all);
-        FEM1D::map_to_reference_cell(
+        element_h = h_mesh.cmat(ci, Eigen::placeholders::all);
+        element_u = u_mesh.cmat(ci, Eigen::placeholders::all);
+        node_coords_h = h_mesh.pmat(element_h, Eigen::placeholders::all);
+        node_coords_u = u_mesh.pmat(element_u, Eigen::placeholders::all);
+        FEM1D::map_from_reference_cell(
             u_mesh.degree(), node_coords_u, qpoints_r,
             u_phi_r, u_dphi_r, detJ_r, qpoints_x, u_dphi_x
         );
-        FEM1D::map_to_reference_cell(
+        FEM1D::map_from_reference_cell(
             h_mesh.degree(), node_coords_h, qpoints_r,
             h_phi_r, h_dphi_r, detJ_r, qpoints_x, h_dphi_x
         );

@@ -68,7 +68,7 @@ IntervalMesh::IntervalMesh(const Eigen::MatrixXd &pmat, int degree)
     dimat = Eigen::VectorXi::Zero(nof_dofs());
 
     double x0 = pmat(0, 0);
-    double x1 = pmat(Eigen::last, 0);
+    double x1 = pmat(Eigen::placeholders::last, 0);
 
     for (int di = 0; di < nof_dofs(); di++) {
         if (fabs(pmat(di, 0) - x0) < 1e-10)

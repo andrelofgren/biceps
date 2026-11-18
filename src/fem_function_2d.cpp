@@ -89,7 +89,7 @@ FEMFunction2D FEMFunction2D::diff_x_interp()
 
     for (int ci = 0; ci < mesh.cmat.rows(); ci++) {
         element = mesh.cmat.row(ci);
-        node_coords = mesh.pmat(element, Eigen::all);
+        node_coords = mesh.pmat(element, Eigen::placeholders::all);
 
         FEM2D::map_from_reference_cell(
             mesh.degree(), mesh.cell_type(), node_coords, qpoints_rs,
@@ -99,7 +99,7 @@ FEMFunction2D FEMFunction2D::diff_x_interp()
         for (int q = 0; q < qpoints_rs.rows(); q++) {
             int w = 2*q;
             duplicate_dof_count(element(q)) += 1;
-            diff_vals(element(q)) += vals(element).dot(dphi_xz(w, Eigen::all));
+            diff_vals(element(q)) += vals(element).dot(dphi_xz(w, Eigen::placeholders::all));
         }
     }
 
@@ -134,7 +134,7 @@ FEMFunction2D FEMFunction2D::diff_z_interp()
 
     for (int ci = 0; ci < mesh.cmat.rows(); ci++) {
         element = mesh.cmat.row(ci);
-        node_coords = mesh.pmat(element, Eigen::all);
+        node_coords = mesh.pmat(element, Eigen::placeholders::all);
 
         FEM2D::map_from_reference_cell(
             mesh.degree(), mesh.cell_type(), node_coords, qpoints_rs,
@@ -144,7 +144,7 @@ FEMFunction2D FEMFunction2D::diff_z_interp()
         for (int q = 0; q < qpoints_rs.rows(); q++) {
             int w = 2*q + 1;
             duplicate_dof_count(element(q)) += 1;
-            diff_vals(element(q)) += vals(element).dot(dphi_xz(w, Eigen::all));
+            diff_vals(element(q)) += vals(element).dot(dphi_xz(w, Eigen::placeholders::all));
         }
     }
 
@@ -195,20 +195,20 @@ FEMFunction2D FEMFunction2D::diff_z_proj()
 
 Eigen::VectorXd FEMFunction2D::eval_cell(int ci)
 {
-    return vals(mesh.cmat.row(ci), Eigen::all);
+    return vals(mesh.cmat.row(ci), Eigen::placeholders::all);
 }
 
 Eigen::VectorXd FEMFunction2D::eval_edge(int ei)
 {
-    return vals(mesh.emat.row(ei), Eigen::all);
+    return vals(mesh.emat.row(ei), Eigen::placeholders::all);
 }
 
 Eigen::MatrixXd FEMFunction2D::extract_vertex_subvec(int domain_id)
 {
     std::vector<int> subdomain_inds = mesh.extract_vertex_dof_inds(domain_id);
     Eigen::MatrixXd vector_xzf(subdomain_inds.size(), 3);
-    vector_xzf(Eigen::all, Eigen::seq(0, 1)) = mesh.pmat(subdomain_inds, Eigen::all);
-    vector_xzf(Eigen::all, 2) = vals(subdomain_inds);
+    vector_xzf(Eigen::placeholders::all, Eigen::seq(0, 1)) = mesh.pmat(subdomain_inds, Eigen::placeholders::all);
+    vector_xzf(Eigen::placeholders::all, 2) = vals(subdomain_inds);
     return vector_xzf;
 }
 
@@ -216,8 +216,8 @@ Eigen::MatrixXd FEMFunction2D::extract_dof_subvec(int domain_id)
 {
     std::vector<int> subdomain_inds = mesh.extract_dof_inds(domain_id);
     Eigen::MatrixXd vector_xzf(subdomain_inds.size(), 3);
-    vector_xzf(Eigen::all, Eigen::seq(0, 1)) = mesh.pmat(subdomain_inds, Eigen::all);
-    vector_xzf(Eigen::all, 2) = vals(subdomain_inds);
+    vector_xzf(Eigen::placeholders::all, Eigen::seq(0, 1)) = mesh.pmat(subdomain_inds, Eigen::placeholders::all);
+    vector_xzf(Eigen::placeholders::all, 2) = vals(subdomain_inds);
     return vector_xzf;
 }
 

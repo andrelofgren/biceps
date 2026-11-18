@@ -36,8 +36,8 @@ BOOST_AUTO_TEST_CASE(test_manufactured_solution_case_1)
         pp.assemble_force_rhs(&force_manufactured_case_1, 2);
         pp.apply_dirichlet_bc(&bc_func_manufactured_case_1, BOUNDARY_ID);
         pp.solve_linear_system();
-        Eigen::VectorXd x_vec = pp.mesh.pmat(Eigen::all, 0);
-        Eigen::VectorXd z_vec = pp.mesh.pmat(Eigen::all, 1);
+        Eigen::VectorXd x_vec = pp.mesh.pmat(Eigen::placeholders::all, 0);
+        Eigen::VectorXd z_vec = pp.mesh.pmat(Eigen::placeholders::all, 1);
 
         Eigen::VectorXd ue_vec = Eigen::VectorXd::Zero(x_vec.size());
         for (int dof = 0; dof < x_vec.size(); ++dof) {
@@ -72,8 +72,8 @@ BOOST_AUTO_TEST_CASE(test_manufactured_solution_case_2)
         pp.assemble_force_rhs(&force_manufactured_case_2, 2);
         pp.apply_dirichlet_bc(&bc_func_manufactured_case_2, BOUNDARY_ID);
         pp.solve_linear_system();
-        Eigen::VectorXd x_vec = pp.mesh.pmat(Eigen::all, 0);
-        Eigen::VectorXd z_vec = pp.mesh.pmat(Eigen::all, 1);
+        Eigen::VectorXd x_vec = pp.mesh.pmat(Eigen::placeholders::all, 0);
+        Eigen::VectorXd z_vec = pp.mesh.pmat(Eigen::placeholders::all, 1);
 
         Eigen::VectorXd ue_vec = Eigen::VectorXd::Zero(x_vec.size());
         for (int dof = 0; dof < x_vec.size(); ++dof) {
@@ -108,8 +108,8 @@ BOOST_AUTO_TEST_CASE(test_manufactured_solution_case_3)
         pp.assemble_force_rhs(&force_manufactured_case_3, 2);
         pp.apply_dirichlet_bc(&bc_func_manufactured_case_3, BOUNDARY_ID);
         pp.solve_linear_system();
-        Eigen::VectorXd x_vec = pp.mesh.pmat(Eigen::all, 0);
-        Eigen::VectorXd z_vec = pp.mesh.pmat(Eigen::all, 1);
+        Eigen::VectorXd x_vec = pp.mesh.pmat(Eigen::placeholders::all, 0);
+        Eigen::VectorXd z_vec = pp.mesh.pmat(Eigen::placeholders::all, 1);
 
         Eigen::VectorXd ue_vec = Eigen::VectorXd::Zero(x_vec.size());
         for (int dof = 0; dof < x_vec.size(); ++dof) {

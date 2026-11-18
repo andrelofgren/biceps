@@ -16,13 +16,14 @@
  * You should have received a copy of the GNU General Public License
  * along with Biceps. If not, see <https://www.gnu.org/licenses/>.
  */
-#include <structured_mesh.hpp>
 #include <functional>
 #include <tuple>
 #include <set>
 #include <boost/format.hpp>
-#include <fem_2d.hpp>
+
 #include <enums.hpp>
+#include <fem_2d.hpp>
+
 
 StructuredMesh::StructuredMesh(int nx, int nz, int degree, int cell_type): 
     _nx(nx), _nz(nz), _degree(degree), _cell_type(cell_type)
@@ -290,7 +291,7 @@ void StructuredMesh::assemble_cimat_quadrilateral()
 
 void StructuredMesh::assemble_dimat()
 {
-    double domain_width = pmat(Eigen::last, 0) - pmat(0, 0);
+    double domain_width = pmat(Eigen::placeholders::last, 0) - pmat(0, 0);
 
     double xtol = domain_width * 1e-3 / _hl;
     double ztol = 1e-3 / _vl;
@@ -332,7 +333,7 @@ void StructuredMesh::assemble_eimat()
 
     eimat = Eigen::MatrixXi::Zero(_nof_edges, dpe + 1);
 
-    double domain_width = pmat(Eigen::last, 0) - pmat(0, 0);
+    double domain_width = pmat(Eigen::placeholders::last, 0) - pmat(0, 0);
 
     double xtol = domain_width * 1e-3 / _hl;
     double ztol = 1e-3 / _vl;
@@ -426,8 +427,8 @@ void StructuredMesh::compute_edge_normals_and_tangents()
         int v1 = eimat(ei, 1);
         int v2 = eimat(ei, _dofs_per_edge);
 
-        edge_tangents(ei, Eigen::all) = pmat.row(v2) - pmat.row(v1);
-        edge_tangents(ei, Eigen::all) /= edge_tangents.row(ei).norm();
+        edge_tangents(ei, Eigen::placeholders::all) = pmat.row(v2) - pmat.row(v1);
+        edge_tangents(ei, Eigen::placeholders::all) /= edge_tangents.row(ei).norm();
 
         edge_normals(ei, 0) = edge_tangents(ei, 1);
         edge_normals(ei, 1) = -edge_tangents(ei, 0);
@@ -446,58 +447,58 @@ void StructuredMesh::compute_dof_normals_and_tangents()
         int v1 = eimat(ei, 1);
         int v2 = eimat(ei, _dofs_per_edge);
 
-        dof_tangents(v1, Eigen::all) += edge_tangents.row(ei);
-        dof_normals(v1, Eigen::all) += edge_normals.row(ei);
-        dof_tangents(v2, Eigen::all) += edge_tangents.row(ei);
-        dof_normals(v2, Eigen::all) += edge_normals.row(ei);
+        dof_tangents(v1, Eigen::placeholders::all) += edge_tangents.row(ei);
+        dof_normals(v1, Eigen::placeholders::all) += edge_normals.row(ei);
+        dof_tangents(v2, Eigen::placeholders::all) += edge_tangents.row(ei);
+        dof_normals(v2, Eigen::placeholders::all) += edge_normals.row(ei);
     }
 
     std::vector<int> boundary_vertex_dofs = extract_vertex_dof_inds(MESH2D::BOUNDARY_ID);
     for (int di: boundary_vertex_dofs) {
-        dof_tangents(di, Eigen::all) /= dof_tangents.row(di).norm();
-        dof_normals(di, Eigen::all) /= dof_normals.row(di).norm();
+        dof_tangents(di, Eigen::placeholders::all) /= dof_tangents.row(di).norm();
+        dof_normals(di, Eigen::placeholders::all) /= dof_normals.row(di).norm();
     }
 
     if (_degree == 2)
         for (int ei: boundary_einds) {
             int ve = eimat(ei, 2);
-            dof_tangents(ve, Eigen::all) = edge_tangents.row(ei);
-            dof_normals(ve, Eigen::all) = edge_normals.row(ei);
+            dof_tangents(ve, Eigen::placeholders::all) = edge_tangents.row(ei);
+            dof_normals(ve, Eigen::placeholders::all) = edge_normals.row(ei);
         }
 
     dof_tangents(
-        corner_dof_SW(), Eigen::all
-    ) = dof_tangents(corner_dof_SW()+1, Eigen::all);
+        corner_dof_SW(), Eigen::placeholders::all
+    ) = dof_tangents(corner_dof_SW()+1, Eigen::placeholders::all);
     dof_normals(
-        corner_dof_SW(), Eigen::all
-    ) = dof_normals(corner_dof_SW()+1, Eigen::all);
+        corner_dof_SW(), Eigen::placeholders::all
+    ) = dof_normals(corner_dof_SW()+1, Eigen::placeholders::all);
 
     dof_tangents(
-        corner_dof_SE(), Eigen::all
-    ) = dof_tangents(corner_dof_SE()-1, Eigen::all);
+        corner_dof_SE(), Eigen::placeholders::all
+    ) = dof_tangents(corner_dof_SE()-1, Eigen::placeholders::all);
     dof_normals(
-        corner_dof_SE(), Eigen::all
-    ) = dof_normals(corner_dof_SE()-1, Eigen::all);
+        corner_dof_SE(), Eigen::placeholders::all
+    ) = dof_normals(corner_dof_SE()-1, Eigen::placeholders::all);
 
     dof_tangents(
-        corner_dof_NE(), Eigen::all
-    ) = dof_tangents(corner_dof_NE()-1, Eigen::all);
+        corner_dof_NE(), Eigen::placeholders::all
+    ) = dof_tangents(corner_dof_NE()-1, Eigen::placeholders::all);
     dof_normals(
-        corner_dof_NE(), Eigen::all
-    ) = dof_normals(corner_dof_NE()-1, Eigen::all);
+        corner_dof_NE(), Eigen::placeholders::all
+    ) = dof_normals(corner_dof_NE()-1, Eigen::placeholders::all);
 
     dof_tangents(
-        corner_dof_NW(), Eigen::all
-    ) = dof_tangents(corner_dof_NW()+1, Eigen::all);
+        corner_dof_NW(), Eigen::placeholders::all
+    ) = dof_tangents(corner_dof_NW()+1, Eigen::placeholders::all);
     dof_normals(
-        corner_dof_NW(), Eigen::all
-    ) = dof_normals(corner_dof_NW()+1, Eigen::all);
+        corner_dof_NW(), Eigen::placeholders::all
+    ) = dof_normals(corner_dof_NW()+1, Eigen::placeholders::all);
 }
 
 void StructuredMesh::compute_vertex_normals_and_tangents()
 {
-    vertex_tangents = dof_tangents(vertex_dof_inds, Eigen::all);
-    vertex_normals = dof_normals(vertex_dof_inds, Eigen::all);
+    vertex_tangents = dof_tangents(vertex_dof_inds, Eigen::placeholders::all);
+    vertex_normals = dof_normals(vertex_dof_inds, Eigen::placeholders::all);
 }
 
 void StructuredMesh::compute_normals_and_tangents()
@@ -547,7 +548,7 @@ std::vector<int> StructuredMesh::extract_dof_inds(int id)
 void StructuredMesh::extrude_x(double x0, double x1)
 {
     Eigen::VectorXd ones = Eigen::VectorXd::Ones(pmat.rows());
-    pmat(Eigen::all, 0) = (ones - pmat(Eigen::all, 0)) * x0 + pmat(Eigen::all, 0) * x1;
+    pmat(Eigen::placeholders::all, 0) = (ones - pmat(Eigen::placeholders::all, 0)) * x0 + pmat(Eigen::placeholders::all, 0) * x1;
     compute_normals_and_tangents();
 }
 
@@ -559,7 +560,7 @@ void StructuredMesh::extrude_x(const Eigen::VectorXd &xvec_p1)
         x_vec = xvec_p1;
     else if (_degree == 2) {
         x_vec = Eigen::VectorXd::Zero(_hl + 1);
-        x_vec(Eigen::seq(0, Eigen::last, 2)) = xvec_p1;
+        x_vec(Eigen::seq(0, Eigen::placeholders::last, 2)) = xvec_p1;
 
         for (int i = 1; i < x_vec.size() - 1; i += 2)
             x_vec(i) = 0.5 * (x_vec(i - 1) + x_vec(i + 1));
@@ -759,9 +760,9 @@ double StructuredMesh::area()
 
     for (int k = 0; k < cmat.rows(); ++k) {
         element = cmat.row(k);
-        node_coords = pmat(element, Eigen::all);
+        node_coords = pmat(element, Eigen::placeholders::all);
 
-        FEM2D::map_to_reference_cell(
+        FEM2D::map_from_reference_cell(
             degree(), cell_type(), node_coords, qpoints_rs,
             phi_rs, dphi_rs, detJ_rs, qpoints_xz, dphi_xz
         );

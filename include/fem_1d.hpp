@@ -19,8 +19,9 @@
 #pragma once
 #define EIGEN_SPARSEMATRIX_PLUGIN <eigen_spmat_addons.hpp>
 
-#include <interval_mesh.hpp>
 #include <Eigen/Sparse>
+
+#include <interval_mesh.hpp>
 
 namespace FEM1D {
     Eigen::MatrixXd reference_element_points_rs(const int degree);

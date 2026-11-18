@@ -19,10 +19,11 @@
 #pragma once
 #define EIGEN_SPARSEMATRIX_PLUGIN <eigen_spmat_addons.hpp>
 
-#include <fem_function_2d.hpp>
-#include <structured_mesh.hpp>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
+
+#include <fem_function_2d.hpp>
+#include <structured_mesh.hpp>
 
 /**
  * @namespace FEM2D

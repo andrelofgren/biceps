@@ -31,10 +31,10 @@ void FEM1D::map_from_reference_cell(
     Eigen::VectorXd dF;
 
     for (int i = 0; i < qpoints_r.rows(); i++) {
-        dF = grad_phi_r(i, Eigen::all) * node_coords;
+        dF = grad_phi_r(i, Eigen::placeholders::all) * node_coords;
         detJ_r_ret(i) = dF.norm();
-        qpoints_x_ret(i, Eigen::all) = phi_r(i, Eigen::all) * node_coords;
-        grad_phi_x_ret(i, Eigen::all) = 1.0 / detJ_r_ret(i) * grad_phi_r(i, Eigen::all);
+        qpoints_x_ret(i, Eigen::placeholders::all) = phi_r(i, Eigen::placeholders::all) * node_coords;
+        grad_phi_x_ret(i, Eigen::placeholders::all) = 1.0 / detJ_r_ret(i) * grad_phi_r(i, Eigen::placeholders::all);
     }
 }
 
@@ -71,7 +71,7 @@ Eigen::MatrixXd FEM1D::reference_element_points_rs(
     const int degree
 ) {
     IntervalMesh mesh(0.0, 1.0, 1, degree);
-    Eigen::MatrixXd ref_coords = mesh.pmat(mesh.cmat.row(0), Eigen::all);
+    Eigen::MatrixXd ref_coords = mesh.pmat(mesh.cmat.row(0), Eigen::placeholders::all);
     return ref_coords;
 }
 
@@ -158,8 +158,8 @@ Eigen::SparseMatrix<double> FEM1D::assemble_mass_matrix(IntervalMesh &mesh, int 
     );
 
     for (int ci = 0; ci < mesh.nof_cells(); ci++) {
-        element = mesh.cmat(ci, Eigen::all);
-        node_coords = mesh.pmat(element, Eigen::all);
+        element = mesh.cmat(ci, Eigen::placeholders::all);
+        node_coords = mesh.pmat(element, Eigen::placeholders::all);
 
         FEM1D::map_from_reference_cell(
             mesh.degree(), node_coords, qpoints_r,

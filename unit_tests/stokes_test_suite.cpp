@@ -75,11 +75,11 @@ BOOST_AUTO_TEST_CASE(test_fluctuating_flow)
         xz_uz_mat = psp.velocity_z().extract_vertex_subvec(DOMAIN_ID);
         xz_p_mat = psp.pressure().extract_vertex_subvec(DOMAIN_ID);
 
-        X_vec = xz_ux_mat(Eigen::all, 0);
-        Z_vec = xz_ux_mat(Eigen::all, 1);
-        UX_vec = xz_ux_mat(Eigen::all, 2);
-        UZ_vec = xz_uz_mat(Eigen::all, 2);
-        P_vec = xz_p_mat(Eigen::all, 2);
+        X_vec = xz_ux_mat(Eigen::placeholders::all, 0);
+        Z_vec = xz_ux_mat(Eigen::placeholders::all, 1);
+        UX_vec = xz_ux_mat(Eigen::placeholders::all, 2);
+        UZ_vec = xz_uz_mat(Eigen::placeholders::all, 2);
+        P_vec = xz_p_mat(Eigen::placeholders::all, 2);
 
         UX_vec_ref = Eigen::VectorXd::Zero(UX_vec.size());
         UZ_vec_ref = Eigen::VectorXd::Zero(UZ_vec.size());

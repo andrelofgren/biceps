@@ -1,6 +1,7 @@
 # TODO
 
 + General enhancements:
+    * Adapt to Eigen 5.0
     * Simplify the CMakeLists.txt
     * Update the README
     * Write documentation
