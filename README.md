@@ -26,7 +26,7 @@ sudo apt install python3-numpy python3-scipy libboost-python-dev
 After installing dependencies for [EigenPy](https://github.com/stack-of-tasks/eigenpy), grab the latest release from [here](https://github.com/stack-of-tasks/eigenpy/archive/refs/tags/v3.13.0.tar.gz) and extract it:
 
 ```console
-tar -xvzf v3.13.0.tar.gz && cd eigenpy-3.10.3
+tar -xvzf eigenpy-3.13.0.tar.gz && cd eigenpy-3.13.0
 ```
 
 Then configure and compile (on all available cores):
