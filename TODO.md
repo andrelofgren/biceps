@@ -2,6 +2,7 @@
 
 + General enhancements:
     * Adapt to Eigen 5.0
+    * Add reference to theory section
     * Simplify the CMakeLists.txt
     * Update the README
     * Write documentation
