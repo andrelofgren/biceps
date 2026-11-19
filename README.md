@@ -1,11 +1,11 @@
 # Biceps - (B) Ice pStokes Solver
-Biceps is a prognostic two-dimensional full-Stokes ice-sheet solver. It comes bundled with its own FEM libraries implemented using the numerical linear algebra library [Eigen3](https://eigen.tuxfamily.org/index.php?title=Main_Page). The packages is mainly intended for investigating numerical stability of viscous free-surface flows.
+Biceps is a prognostic two-dimensional full-Stokes ice-sheet solver built around the numerical linear algebra library [Eigen3](https://libeigen.gitlab.io). The packages is mainly intended for investigating numerical stability of viscous free-surface flows.
 
 # Build instruction
 ## Linux (Ubuntu/Debian)
 
 ### C++
-This project has rather few dependencies; a minimal C++ installation requires only a working C++ compiler and tool chain (e.g., [gcc](https://gcc.gnu.org/)), [CMake](https://cmake.org/), [boost](https://www.boost.org/), and [Eigen3](https://eigen.tuxfamily.org/index.php?title=Main_Page):
+This project has rather few dependencies; a minimal C++ installation requires only a working C++ compiler and tool chain (e.g., [gcc](https://gcc.gnu.org/)), [CMake](https://cmake.org/), [boost](https://www.boost.org/), and [Eigen3](https://libeigen.gitlab.io):
 
 ```console
 sudo apt install gcc build-essential cmake libboost-dev libeigen3-dev
@@ -17,13 +17,13 @@ cmake .. -DCMAKE_BUILD_TYPE=Release
 
 ### Python
 
-Building the python interface requires [EigenPy](https://github.com/stack-of-tasks/eigenpy) and the [boost](https://www.boost.org/) python module. The library [EigenPy](https://github.com/stack-of-tasks/eigenpy) in turn depends on [NumPy](https://numpy.org/) and [SciPy](https://scipy.org/), to install run the following command:
+Building the python interface requires [EigenPy](https://github.com/stack-of-tasks/eigenpy) and the [boost](https://www.boost.org/) python module. The EigenPy library in turn depends on [NumPy](https://numpy.org) and [SciPy](https://scipy.org), to install run the following command:
 
 ```console
 sudo apt install python3-numpy python3-scipy libboost-python-dev
 ```
 
-After installing dependencies for [EigenPy](https://github.com/stack-of-tasks/eigenpy), grab the latest release of it from [here](https://github.com/stack-of-tasks/eigenpy/archive/refs/tags/v3.13.0.tar.gz) and extract it:
+After installing dependencies for EigenPy, grab the latest release of it from [here](https://github.com/stack-of-tasks/eigenpy/archive/refs/tags/v3.13.0.tar.gz) and extract it:
 
 ```console
 tar -xvzf eigenpy-3.13.0.tar.gz && cd eigenpy-3.13.0
@@ -753,7 +753,7 @@ for all $w \in \mathcal{Z}$.
 ### Free surface stabilization
 The above time discretization are both examples of explicit (w.r.t. surface velocities) time stepping schemes, and are therefore subject to stability constraints on the time-step size. However, solving for the unknown velocities at the next time step in a fully implicit manner requires an iterative algorithm to resolve the nonlinearity. A more computationally appealing approach is to combine the stability of an implicit scheme with the low computational cost of an explicit scheme. A method to this end is the so-called free-surface stabilization algorithm (FSSA), which numerical studies have shown to increase stable time-step size up to an order of magnitude.
 
-For the purpose of deriving this method, note that a fully implicit scheme corresponds to replacing the domain of integration in the weak formulation of the pStokes equation with $\Omega^{k+1}$. 
+For the purpose of deriving this method, note that a fully implicit scheme corresponds to replacing the domain of integration in the weak formulation of the pStokes equation with $\Omega^{k+1}$.
 
 For the fully implicit scheme, the weak form reads:
 
@@ -763,9 +763,9 @@ Find $\mathbf{u} \in \mathcal{U}$ and $p \in \mathcal{Q}$, such that
 \left (\dot{\varepsilon}(\mathbf{v}), 2 \eta(\mathbf{u}) \dot{\varepsilon}(\mathbf{u}) \right )_{\Omega^{k+1}} - (\nabla \cdot \mathbf{v}, p)_{\Omega^{k+1}} - (q, \nabla \cdot \mathbf{u})_{\Omega^{k+1}} = (\mathbf{v}, \mathbf{f})_{\Omega^{k+1}}
 ```
 
-for all $\mathbf{v} \in \mathcal{V}$ and all $q \in \mathcal{Q}$. 
+for all $\mathbf{v} \in \mathcal{V}$ and all $q \in \mathcal{Q}$.
 
-Next all integrals on the left-hand side are approximated as 
+Next all integrals on the left-hand side are approximated as
 
 ```math
 (\cdot, \cdot)_{\Omega^{k+1}} \approx (\cdot, \cdot)_{\Omega^{k}}.
